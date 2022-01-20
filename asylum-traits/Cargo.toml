@@ -1,0 +1,47 @@
+[package]
+name = "asylum-traits"
+version = "0.0.1"
+description = 'Shared traits'
+authors = ['Supercolony <https://supercolony.net/> & Asylum <https://asylum.space/>']
+homepage = 'https://asylum.space/'
+edition = "2021"
+
+# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
+
+[dependencies.codec]
+default-features = false
+features = ['derive']
+package = 'parity-scale-codec'
+version = '2.0.0'
+
+[dependencies.scale-info]
+default-features = false
+features = ['derive']
+version = '1.0'
+
+[dependencies.serde]
+default-features = false
+features = ['derive']
+version = '1.0.133'
+
+[dependencies.sp-runtime]
+default-features = false
+git = 'https://github.com/paritytech/substrate.git'
+tag = 'monthly-2021-11-1'
+version = '4.0.0-dev'
+
+[dependencies.sp-std]
+default-features = false
+git = 'https://github.com/paritytech/substrate.git'
+tag = 'monthly-2021-11-1'
+version = '4.0.0-dev'
+
+[features]
+default = ['std']
+std = [
+    'serde/std',
+    'codec/std',
+    'scale-info/std',
+	'sp-runtime/std',
+	'sp-std/std',
+]
