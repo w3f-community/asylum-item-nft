@@ -6,6 +6,7 @@
 #[cfg(feature = "std")]
 include!(concat!(env!("OUT_DIR"), "/wasm_binary.rs"));
 
+use frame_system::{EnsureSigned};
 use pallet_grandpa::{
 	fg_primitives, AuthorityId as GrandpaId, AuthorityList as GrandpaAuthorityList,
 };
@@ -279,6 +280,42 @@ impl pallet_template::Config for Runtime {
 	type Event = Event;
 }
 
+pub type AssetId = u32;
+
+parameter_types! {
+	pub const Deposit: u32 = 0;
+	pub const StringLimit: u32 = 32;
+}
+
+impl pallet_assets::Config for Runtime {
+	type Event = Event;
+	type Balance = Balance;
+	type AssetId = AssetId;
+	type Currency = Balances;
+	type ForceOrigin = EnsureSigned<AccountId>;
+	type AssetDeposit = Deposit;
+	type MetadataDepositBase = Deposit;
+	type MetadataDepositPerByte = Deposit;
+	type ApprovalDeposit = Deposit;
+	type StringLimit = StringLimit;
+	type Freezer = ();
+	type Extra = ();
+	type WeightInfo = ();
+
+}
+
+parameter_types! {
+	pub const MetadataLimit: u32 = 256;
+	pub const MinGamesAmount: u32 = 1;
+}
+
+impl games_management::Config for Runtime {
+	type Event = Event;
+	type Assets = Assets;
+	type MetadataLimit = MetadataLimit;
+	type MinGamesAmount = MinGamesAmount;
+}
+
 // Create the runtime by composing the FRAME pallets that were previously configured.
 construct_runtime!(
 	pub enum Runtime where
@@ -296,6 +333,8 @@ construct_runtime!(
 		Sudo: pallet_sudo,
 		// Include the custom logic from the pallet-template in the runtime.
 		TemplateModule: pallet_template,
+		Assets: pallet_assets,
+		GameManagement: games_management,
 	}
 );
 
