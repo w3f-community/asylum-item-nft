@@ -2,6 +2,7 @@
 members = [
     'node',
     'pallets/games-management',
+    'pallets/item-nft',
     'runtime',
     'asylum-traits',
 ]

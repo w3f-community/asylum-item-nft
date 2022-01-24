@@ -295,6 +295,33 @@ impl pallet_assets::Config for Runtime {
 	type WeightInfo = ();
 
 }
+parameter_types! {
+	pub const ClassDeposit: Balance = 100;
+	pub const InstanceDeposit: Balance = 1;
+	pub const KeyLimit: u32 = 32;
+	pub const ValueLimit: u32 = 256;
+	pub const UniquesMetadataDepositBase: Balance = 100;
+	pub const AttributeDepositBase: Balance = 10;
+	pub const DepositPerByte: Balance = 10;
+	pub const UniquesStringLimit: u32 = 128;
+}
+
+impl pallet_uniques::Config for Runtime {
+	type Event = Event;
+	type ClassId = u32;
+	type InstanceId = u32;
+	type Currency = Balances;
+	type ForceOrigin = frame_system::EnsureRoot<AccountId>;
+	type ClassDeposit = ClassDeposit;
+	type InstanceDeposit = InstanceDeposit;
+	type MetadataDepositBase = UniquesMetadataDepositBase;
+	type AttributeDepositBase = AttributeDepositBase;
+	type DepositPerByte = DepositPerByte;
+	type StringLimit = UniquesStringLimit;
+	type KeyLimit = KeyLimit;
+	type ValueLimit = ValueLimit;
+	type WeightInfo = ();
+}
 
 parameter_types! {
 	pub const MetadataLimit: u32 = 256;
@@ -306,6 +333,12 @@ impl games_management::Config for Runtime {
 	type Assets = Assets;
 	type MetadataLimit = MetadataLimit;
 	type MinGamesAmount = MinGamesAmount;
+}
+
+impl item_nft::Config for Runtime {
+	type Event = Event;
+	type Nft = Uniques;
+	type MetadataLimit = MetadataLimit;
 }
 
 // Create the runtime by composing the FRAME pallets that were previously configured.
@@ -325,7 +358,9 @@ construct_runtime!(
 		Sudo: pallet_sudo,
 		// Include the custom logic from the pallet-template in the runtime.
 		Assets: pallet_assets,
+		Uniques: pallet_uniques,
 		GameManagement: games_management,
+		Items: item_nft,
 	}
 );
 
