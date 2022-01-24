@@ -74,22 +74,6 @@ pub mod pallet {
 		GameDestroyed {
 			game_id: GameId,
 		},
-		GameMinted {
-			who: T::AccountId,
-			game_id: GameId,
-			amount: BalanceOf<T>,
-		},
-		GameBurned {
-			who: T::AccountId,
-			game_id: GameId,
-			amount: BalanceOf<T>,
-		},
-		GameTransfered {
-			from: T::AccountId,
-			to: T::AccountId,
-			game_id: GameId,
-			copy_amount: BalanceOf<T>,
-		},
 		BindItem {
 			item_id: ItemId,
 			game_id: GameId,
