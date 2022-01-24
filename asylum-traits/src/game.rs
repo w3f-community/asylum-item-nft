@@ -4,8 +4,8 @@ use sp_runtime::{RuntimeDebug, DispatchError, DispatchResult};
 
 use crate::primitives::*;
 
-#[cfg_attr(feature = "std", derive(PartialEq, Eq))]
-#[derive(Default, Encode, Decode, RuntimeDebug, TypeInfo)]
+#[cfg_attr(feature = "std", derive())]
+#[derive(Default, Encode, Decode, RuntimeDebug, TypeInfo, PartialEq, Eq)]
 pub struct GameInfo<BoundedString> {
 	pub metadata: BoundedString,
 }
