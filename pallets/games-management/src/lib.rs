@@ -103,7 +103,7 @@ pub mod pallet {
 	#[pallet::error]
 	pub enum Error<T> {
 		NoAvailableGameId,
-		StorageOverflow,
+		GameNotExists,
 	}
 
 	#[pallet::call]
@@ -128,7 +128,8 @@ pub mod pallet {
 		#[transactional]
 		pub fn destroy_game(origin: OriginFor<T>, game_id: GameId) -> DispatchResult {
 			ensure_signed(origin)?;
-
+			ensure!(Games::<T>::contains_key(game_id), Error::<T>::GameNotExists);
+			
 			Self::game_burn(game_id)?;
 
 			let destroy_witness = T::Assets::get_destroy_witness(&game_id).unwrap();
@@ -138,6 +139,33 @@ pub mod pallet {
 			Ok(())
 		}
 
+		#[pallet::weight(10_000)]
+		#[transactional]
+		pub fn bind_item(origin: OriginFor<T>, item_id: ItemId, game_id: GameId) -> DispatchResult {
+			ensure_signed(origin)?;
+			ensure!(Games::<T>::contains_key(game_id), Error::<T>::GameNotExists);
+
+			Self::game_item_bind_to_game(item_id, game_id)?;
+
+			Self::deposit_event(Event::BindItem { item_id, game_id });
+			Ok(())
+		}
+
+		#[pallet::weight(10_000)]
+		#[transactional]
+		pub fn unbind_item(
+			origin: OriginFor<T>,
+			item_id: ItemId,
+			game_id: GameId,
+		) -> DispatchResult {
+			ensure_signed(origin)?;
+			ensure!(Games::<T>::contains_key(game_id), Error::<T>::GameNotExists);
+
+			Self::game_item_unbind_from_game(item_id, game_id)?;
+
+			Self::deposit_event(Event::UnbindItem { item_id, game_id });
+			Ok(())
+		}
 	}
 
 	impl<T: Config> Pallet<T> {
