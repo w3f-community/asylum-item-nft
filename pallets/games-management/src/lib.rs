@@ -18,7 +18,7 @@ pub mod pallet {
 	};
 	use frame_support::{
 		pallet_prelude::*,
-		traits::tokens::fungibles::{Create, Destroy, Inspect, InspectMetadata, Mutate, Transfer},
+		traits::tokens::fungibles::{Create, Destroy, Inspect},
 		transactional,
 	};
 	use frame_system::pallet_prelude::*;
@@ -32,12 +32,9 @@ pub mod pallet {
 	pub trait Config: frame_system::Config {
 		type Event: From<Event<Self>> + IsType<<Self as frame_system::Config>::Event>;
 
-		type Assets: Create<Self::AccountId>
-			+ Inspect<Self::AccountId, AssetId = GameId>
-			+ InspectMetadata<Self::AccountId>
-			+ Destroy<Self::AccountId>
-			+ Transfer<Self::AccountId>
-			+ Mutate<Self::AccountId>;
+		type Assets: Inspect<Self::AccountId, AssetId = GameId> 
+			+ Create<Self::AccountId>
+			+ Destroy<Self::AccountId>;
 
 		#[pallet::constant]
 		type MetadataLimit: Get<u32>;
