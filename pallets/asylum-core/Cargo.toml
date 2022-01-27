@@ -1,5 +1,5 @@
 [package]
-name = "item-nft"
+name = "asylum-core"
 version = "0.0.1"
 description = 'Asylum item NFT'
 authors = ['Supercolony <https://supercolony.net/> & Asylum <https://asylum.space/>']
@@ -66,6 +66,18 @@ git = 'https://github.com/paritytech/substrate.git'
 tag = 'monthly-2021-12'
 version = '4.0.0-dev'
 
+[dev-dependencies.pallet-balances]
+default-features = false
+git = 'https://github.com/paritytech/substrate.git'
+tag = 'monthly-2021-12'
+version = '4.0.0-dev'
+
+[dev-dependencies.pallet-uniques]
+default-features = false
+git = 'https://github.com/paritytech/substrate.git'
+tag = 'monthly-2021-12'
+version = '4.0.0-dev'
+
 [features]
 default = ['std']
 std = [
@@ -75,5 +87,7 @@ std = [
     'frame-system/std',
     'sp-std/std',
     'sp-runtime/std',
+    'pallet-uniques/std',
+    'pallet-balances/std'
 ]
 try-runtime = ['frame-support/try-runtime']

@@ -60,8 +60,6 @@ pub type Index = u32;
 /// A hash of some data used by the chain.
 pub type Hash = sp_core::H256;
 
-pub type AssetId = u32;
-
 /// Opaque types. These are used by the CLI to instantiate machinery that don't need to know
 /// the specifics of the runtime. They can then be made to be agnostic over specific formats
 /// of data like extrinsics, allowing for them to continue syncing the network through upgrades
@@ -275,27 +273,6 @@ impl pallet_sudo::Config for Runtime {
 }
 
 parameter_types! {
-	pub const Deposit: u32 = 0;
-	pub const StringLimit: u32 = 32;
-}
-
-impl pallet_assets::Config for Runtime {
-	type Event = Event;
-	type Balance = Balance;
-	type AssetId = AssetId;
-	type Currency = Balances;
-	type ForceOrigin = EnsureSigned<AccountId>;
-	type AssetDeposit = Deposit;
-	type MetadataDepositBase = Deposit;
-	type MetadataDepositPerByte = Deposit;
-	type ApprovalDeposit = Deposit;
-	type StringLimit = StringLimit;
-	type Freezer = ();
-	type Extra = ();
-	type WeightInfo = ();
-
-}
-parameter_types! {
 	pub const ClassDeposit: Balance = 100;
 	pub const InstanceDeposit: Balance = 1;
 	pub const KeyLimit: u32 = 32;
@@ -325,20 +302,17 @@ impl pallet_uniques::Config for Runtime {
 
 parameter_types! {
 	pub const MetadataLimit: u32 = 256;
-	pub const MinGamesAmount: u32 = 1;
+	pub const ItemsClassId: u32 = 1;
+	pub const GamesClassId: u32 = 2;
 }
 
-impl games_management::Config for Runtime {
+impl asylum_core::Config for Runtime {
 	type Event = Event;
-	type Assets = Assets;
+	type ItemNFT = Uniques;
+	type GameNFT = Uniques;
 	type MetadataLimit = MetadataLimit;
-	type MinGamesAmount = MinGamesAmount;
-}
-
-impl item_nft::Config for Runtime {
-	type Event = Event;
-	type Nft = Uniques;
-	type MetadataLimit = MetadataLimit;
+	type ItemsClassId = ItemsClassId;
+	type GamesClassId = GamesClassId;
 }
 
 // Create the runtime by composing the FRAME pallets that were previously configured.
@@ -357,10 +331,8 @@ construct_runtime!(
 		TransactionPayment: pallet_transaction_payment,
 		Sudo: pallet_sudo,
 		// Include the custom logic from the pallet-template in the runtime.
-		Assets: pallet_assets,
 		Uniques: pallet_uniques,
-		GameManagement: games_management,
-		Items: item_nft,
+		Asylum: asylum_core,
 	}
 );
 

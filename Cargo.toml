@@ -1,8 +1,7 @@
 [workspace]
 members = [
     'node',
-    'pallets/games-management',
-    'pallets/item-nft',
+    'pallets/asylum-core',
     'runtime',
     'asylum-traits',
 ]

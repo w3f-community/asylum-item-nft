@@ -12,14 +12,9 @@ repository = 'https://github.com/substrate-developer-hub/substrate-node-template
 [package.metadata.docs.rs]
 targets = ['x86_64-unknown-linux-gnu']
 
-[dependencies.games-management]
+[dependencies.asylum-core]
 default-features = false
-path = '../pallets/games-management'
-version = '0.0.1'
-
-[dependencies.item-nft]
-default-features = false
-path = '../pallets/item-nft'
+path = '../pallets/asylum-core'
 version = '0.0.1'
 
 [build-dependencies.substrate-wasm-builder]
@@ -118,12 +113,6 @@ tag = 'monthly-2021-12'
 version = '4.0.0-dev'
 
 [dependencies.pallet-transaction-payment-rpc-runtime-api]
-default-features = false
-git = 'https://github.com/paritytech/substrate.git'
-tag = 'monthly-2021-12'
-version = '4.0.0-dev'
-
-[dependencies.pallet-assets]
 default-features = false
 git = 'https://github.com/paritytech/substrate.git'
 tag = 'monthly-2021-12'
@@ -233,10 +222,8 @@ std = [
     'pallet-timestamp/std',
     'pallet-transaction-payment-rpc-runtime-api/std',
     'pallet-transaction-payment/std',
-    'pallet-assets/std',
     'pallet-uniques/std',
-    'games-management/std',
-    'item-nft/std',
+    'asylum-core/std',
     'sp-api/std',
     'sp-block-builder/std',
     'sp-consensus-aura/std',
