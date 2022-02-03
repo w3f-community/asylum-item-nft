@@ -2,6 +2,7 @@
 
 pub use pallet::*;
 
+mod functions;
 mod implementation;
 
 #[cfg(test)]
@@ -14,16 +15,17 @@ mod tests;
 pub mod pallet {
 	use asylum_traits::{
 		primitives::{GameId, ItemId},
-		Game, GameInfo, Item, ItemInfo,
+		Game, GameInfo, Item, ItemMetadata, ItemAttributes, ItemInfo,
 	};
 	use frame_support::{
 		pallet_prelude::*,
 		traits::tokens::nonfungibles::{Create, Destroy, Inspect, Mutate, Transfer},
-		transactional,
+		transactional
 	};
 	use frame_system::{ensure_signed, pallet_prelude::OriginFor};
 
 	pub type MetadataLimitOf<T> = BoundedVec<u8, <T as Config>::MetadataLimit>;
+	pub type KeyLimitOf<T> = BoundedVec<u8, <T as Config>::KeyLimit>;
 
 	#[pallet::config]
 	pub trait Config: frame_system::Config {
@@ -43,6 +45,9 @@ pub mod pallet {
 
 		#[pallet::constant]
 		type MetadataLimit: Get<u32>;
+
+		#[pallet::constant]
+		type KeyLimit: Get<u32>;
 
 		#[pallet::constant]
 		type ItemsClassId: Get<u32>;
@@ -66,12 +71,24 @@ pub mod pallet {
 	#[pallet::storage]
 	#[pallet::getter(fn items)]
 	pub type Items<T: Config> =
-		StorageMap<_, Twox64Concat, ItemId, ItemInfo<MetadataLimitOf<T>>, ValueQuery>;
+		StorageMap<_, Twox64Concat, ItemId, ItemInfo<MetadataLimitOf<T>>, OptionQuery>;
 
 	#[pallet::storage]
 	#[pallet::getter(fn games)]
 	pub type Games<T: Config> =
-		StorageMap<_, Twox64Concat, GameId, GameInfo<MetadataLimitOf<T>>, ValueQuery>;
+		StorageMap<_, Twox64Concat, GameId, GameInfo<MetadataLimitOf<T>>, OptionQuery>;
+
+	#[pallet::storage]
+	#[pallet::getter(fn attributes)]
+	pub(super) type Attributes<T: Config> = StorageDoubleMap<
+		_,
+		Twox64Concat,
+		ItemId,
+		Twox64Concat,
+		KeyLimitOf<T>,
+		MetadataLimitOf<T>,
+		OptionQuery
+	>;
 
 	#[pallet::event]
 	#[pallet::generate_deposit(pub(super) fn deposit_event)]
@@ -79,8 +96,10 @@ pub mod pallet {
 		ItemMinted { item_id: ItemId, recipient: T::AccountId },
 		ItemBurned { item_id: ItemId },
 		ItemTransfered { item_id: ItemId, destination: T::AccountId },
-		ItemMetadataSet{item_id: ItemId},
-		ItemMetadataCleared{item_id: ItemId},
+		ItemMetadataSet{ item_id: ItemId },
+		ItemMetadataCleared{ item_id: ItemId },
+		ItemAttributeSet{ item_id: ItemId, key: KeyLimitOf<T> },
+		ItemAttributeCleared{ item_id: ItemId, key: KeyLimitOf<T> },
 		GameMinted { game_id: GameId, recipient: T::AccountId },
 		GameBurned { game_id: GameId },
 		GameTransfered { game_id: GameId, destination: T::AccountId },
@@ -102,10 +121,7 @@ pub mod pallet {
 			admin: T::AccountId,
 		) -> DispatchResult {
 			ensure_signed(origin)?;
-
-			T::ItemNFT::create_class(&T::ItemsClassId::get(), &who, &admin)?;
-
-			Ok(())
+			T::ItemNFT::create_class(&T::ItemsClassId::get(), &who, &admin)
 		}
 
 		#[pallet::weight(10_000)]
@@ -116,10 +132,7 @@ pub mod pallet {
 			admin: T::AccountId,
 		) -> DispatchResult {
 			ensure_signed(origin)?;
-
-			T::GameNFT::create_class(&T::GamesClassId::get(), &who, &admin)?;
-
-			Ok(())
+			T::GameNFT::create_class(&T::GamesClassId::get(), &who, &admin)
 		}
 
 		#[pallet::weight(10_000)]
@@ -131,10 +144,7 @@ pub mod pallet {
 		) -> DispatchResult {
 			ensure_signed(origin)?;
 			// TODO: add permission checks if needed
-
-			let item_id = Self::item_mint(metadata)?;
-			T::ItemNFT::mint_into(&T::ItemsClassId::get(), &item_id, &recipient)?;
-
+			let item_id = Self::item_mint(recipient.clone(), metadata)?;
 			Self::deposit_event(Event::ItemMinted { item_id, recipient });
 			Ok(())
 		}
@@ -144,10 +154,7 @@ pub mod pallet {
 		pub fn burn_item(origin: OriginFor<T>, item_id: ItemId) -> DispatchResult {
 			ensure_signed(origin)?;
 			// TODO: add permission checks if needed
-
 			Self::item_burn(item_id)?;
-			T::ItemNFT::burn_from(&T::ItemsClassId::get(), &item_id)?;
-
 			Self::deposit_event(Event::ItemBurned { item_id });
 			Ok(())
 		}
@@ -161,44 +168,66 @@ pub mod pallet {
 		) -> DispatchResult {
 			ensure_signed(origin)?;
 			// TODO: add permission checks if needed
-
-			T::ItemNFT::transfer(&T::ItemsClassId::get(), &item_id, &destination)?;
-
+			Self::item_transfer(destination.clone(), item_id)?;
 			Self::deposit_event(Event::ItemTransfered { item_id, destination });
 			Ok(())
 		}
 
 		#[pallet::weight(10_000)]
 		#[transactional]
-		pub fn set_metadata_item(
+		pub fn set_item_metadata(
 			origin: OriginFor<T>,
 			item_id: ItemId,
 			metadata: BoundedVec<u8, T::MetadataLimit>
 		) -> DispatchResult {
 			ensure_signed(origin)?;
 			// TODO: add permission checks if needed
-
 			Self::item_set_metadata(item_id, metadata)?;
-
 			Self::deposit_event(Event::ItemMetadataSet { item_id });
 			Ok(())
 		}
 
 		#[pallet::weight(10_000)]
 		#[transactional]
-		pub fn clear_metadata_item(
+		pub fn clear_item_metadata(
 			origin: OriginFor<T>,
 			item_id: ItemId
 		) -> DispatchResult {
 			ensure_signed(origin)?;
 			// TODO: add permission checks if needed
-
 			Self::item_clear_metadata(item_id)?;
-
 			Self::deposit_event(Event::ItemMetadataCleared { item_id });
 			Ok(())
 		}
 
+		#[pallet::weight(10_000)]
+		#[transactional]
+		pub fn set_item_attribute(
+			origin: OriginFor<T>,
+			item_id: ItemId,
+			key: BoundedVec<u8, T::KeyLimit>,
+			metadata: BoundedVec<u8, T::MetadataLimit>
+		) -> DispatchResult {
+			ensure_signed(origin)?;
+			// TODO: add permission checks if needed
+			Self::item_set_attribute(item_id, &key, &metadata)?;
+			Self::deposit_event(Event::ItemAttributeSet { item_id, key });
+			Ok(())
+		}
+
+		#[pallet::weight(10_000)]
+		#[transactional]
+		pub fn clear_item_attribute(
+			origin: OriginFor<T>,
+			item_id: ItemId,
+			key: BoundedVec<u8, T::KeyLimit>
+		) -> DispatchResult {
+			ensure_signed(origin)?;
+			// TODO: add permission checks if needed
+			Self::item_clear_attribute(item_id, &key)?;
+			Self::deposit_event(Event::ItemAttributeCleared { item_id, key });
+			Ok(())
+		}
 
 		#[pallet::weight(10_000)]
 		#[transactional]
@@ -209,10 +238,8 @@ pub mod pallet {
 		) -> DispatchResult {
 			ensure_signed(origin)?;
 			// TODO: add permission checks if needed
-
 			let game_id = Self::game_mint(metadata)?;
 			T::GameNFT::mint_into(&T::GamesClassId::get(), &game_id, &recipient)?;
-
 			Self::deposit_event(Event::GameMinted { game_id, recipient });
 			Ok(())
 		}
@@ -222,10 +249,8 @@ pub mod pallet {
 		pub fn burn_game(origin: OriginFor<T>, game_id: GameId) -> DispatchResult {
 			ensure_signed(origin)?;
 			// TODO: add permission checks if needed
-
 			Self::game_burn(game_id)?;
 			T::GameNFT::burn_from(&T::GamesClassId::get(), &game_id)?;
-
 			Self::deposit_event(Event::GameBurned { game_id });
 			Ok(())
 		}
@@ -239,9 +264,7 @@ pub mod pallet {
 		) -> DispatchResult {
 			ensure_signed(origin)?;
 			// TODO: add permission checks if needed
-
 			T::GameNFT::transfer(&T::GamesClassId::get(), &game_id, &destination)?;
-
 			Self::deposit_event(Event::GameTransfered { game_id, destination });
 			Ok(())
 		}

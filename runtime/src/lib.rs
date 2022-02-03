@@ -6,7 +6,6 @@
 #[cfg(feature = "std")]
 include!(concat!(env!("OUT_DIR"), "/wasm_binary.rs"));
 
-use frame_system::{EnsureSigned};
 use pallet_grandpa::{
 	fg_primitives, AuthorityId as GrandpaId, AuthorityList as GrandpaAuthorityList,
 };
@@ -301,7 +300,6 @@ impl pallet_uniques::Config for Runtime {
 }
 
 parameter_types! {
-	pub const MetadataLimit: u32 = 256;
 	pub const ItemsClassId: u32 = 1;
 	pub const GamesClassId: u32 = 2;
 }
@@ -310,7 +308,8 @@ impl asylum_core::Config for Runtime {
 	type Event = Event;
 	type ItemNFT = Uniques;
 	type GameNFT = Uniques;
-	type MetadataLimit = MetadataLimit;
+	type MetadataLimit = ValueLimit;
+	type KeyLimit = KeyLimit;
 	type ItemsClassId = ItemsClassId;
 	type GamesClassId = GamesClassId;
 }

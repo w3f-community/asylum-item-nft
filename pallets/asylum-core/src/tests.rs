@@ -1,6 +1,8 @@
 use crate::mock::*;
 use asylum_traits::{GameInfo, ItemInfo};
-use frame_support::assert_ok;
+use frame_support::{assert_ok, BoundedVec};
+
+type KeyLimitOf = BoundedVec<u8, KeyLimit>;
 
 macro_rules! bvec {
 	($( $x:tt )*) => {
@@ -18,7 +20,7 @@ fn should_mint_item() {
 	ExtBuilder::default().build().execute_with(|| {
 		initialize_collections();
 		assert_ok!(AsylumCore::mint_item(Origin::signed(ALICE), BOB, Some(bvec![0u8; 9])));
-		assert_eq!(AsylumCore::items(0), ItemInfo { metadata: Some(bvec![0u8; 9]) });
+		assert_eq!(AsylumCore::items(0), Some(ItemInfo { metadata: Some(bvec![0u8; 9]) }));
 	});
 }
 
@@ -42,11 +44,54 @@ fn should_transfer_item() {
 }
 
 #[test]
+fn should_set_item_metadata() {
+	ExtBuilder::default().build().execute_with(|| {
+		initialize_collections();
+		assert_ok!(AsylumCore::mint_item(Origin::signed(ALICE), BOB, None));
+		assert_ok!(AsylumCore::set_item_metadata(Origin::signed(ALICE), 0, bvec![0u8; 9]));
+		assert_eq!(AsylumCore::items(0), Some(ItemInfo { metadata: Some(bvec![0u8; 9]) }));
+	});
+}
+
+#[test]
+fn should_clear_item_metadata() {
+	ExtBuilder::default().build().execute_with(|| {
+		initialize_collections();
+		assert_ok!(AsylumCore::mint_item(Origin::signed(ALICE), BOB, Some(bvec![0u8; 9])));
+		assert_ok!(AsylumCore::clear_item_metadata(Origin::signed(BOB), 0));
+		assert_eq!(AsylumCore::items(0), None);
+	});
+}
+
+#[test]
+fn should_set_item_attribute() {
+	ExtBuilder::default().build().execute_with(|| {
+		initialize_collections();
+		assert_ok!(AsylumCore::mint_item(Origin::signed(ALICE), BOB, Some(bvec![0u8; 9])));
+		assert_ok!(AsylumCore::set_item_attribute(Origin::signed(ALICE), 0, bvec![1u8; 32], bvec![0u8; 9]));
+		assert_eq!(AsylumCore::attributes::<u32, KeyLimitOf>(0, bvec![1u8; 32]), Some(bvec![0u8; 9]));
+		assert_eq!(AsylumCore::attributes::<u32, KeyLimitOf>(0, bvec![2u8; 32]), None);
+	});
+}
+
+#[test]
+fn should_clear_item_attribute() {
+	ExtBuilder::default().build().execute_with(|| {
+		initialize_collections();
+		assert_ok!(AsylumCore::mint_item(Origin::signed(ALICE), BOB, Some(bvec![0u8; 9])));
+		assert_ok!(AsylumCore::set_item_attribute(Origin::signed(ALICE), 0, bvec![1u8; 32], bvec![0u8; 9]));
+		assert_eq!(AsylumCore::attributes::<u32, KeyLimitOf>(0, bvec![1u8; 32]), Some(bvec![0u8; 9]));
+		assert_ok!(AsylumCore::clear_item_attribute(Origin::signed(ALICE), 0, bvec![1u8; 32]));
+		assert_eq!(AsylumCore::attributes::<u32, KeyLimitOf>(0, bvec![1u8; 32]), None);
+	});
+}
+
+#[test]
 fn should_mint_game() {
 	ExtBuilder::default().build().execute_with(|| {
 		initialize_collections();
 		assert_ok!(AsylumCore::mint_game(Origin::signed(ALICE), BOB, bvec![0u8; 9]));
-		assert_eq!(AsylumCore::games(0), GameInfo { metadata: bvec![0u8; 9] });
+		assert_eq!(AsylumCore::games(0), Some(GameInfo { metadata: bvec![0u8; 9] }));
 	});
 }
 

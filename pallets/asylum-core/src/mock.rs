@@ -105,7 +105,6 @@ impl pallet_uniques::Config for Test {
 }
 
 parameter_types! {
-	pub const MetadataLimit: u32 = 32;
 	pub const ItemClassId: u32 = 1;
 	pub const GamesClassId: u32 = 2;
 }
@@ -114,7 +113,8 @@ impl asylum_core::Config for Test {
 	type Event = Event;
 	type ItemNFT = Uniques;
 	type GameNFT = Uniques;
-	type MetadataLimit = MetadataLimit;
+	type MetadataLimit = ValueLimit;
+	type KeyLimit = KeyLimit;
 	type ItemsClassId = ItemClassId;
 	type GamesClassId = GamesClassId;
 }

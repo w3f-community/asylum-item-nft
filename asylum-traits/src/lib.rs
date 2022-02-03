@@ -4,7 +4,7 @@ pub mod game;
 pub mod item;
 
 pub use game::{Game, GameInfo};
-pub use item::{Item, ItemInfo};
+pub use item::{Item, ItemMetadata, ItemAttributes, ItemInfo};
 
 pub mod primitives {
 	pub type GameId = u32;

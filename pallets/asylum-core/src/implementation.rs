@@ -1,36 +1,55 @@
 use asylum_traits::primitives::{GameId, ItemId};
-use asylum_traits::{Game, GameInfo, Item, ItemInfo};
+use asylum_traits::{Game, GameInfo, Item, ItemMetadata, ItemAttributes, ItemInfo};
 use sp_runtime::{DispatchError, DispatchResult};
+use frame_support::{pallet_prelude::Get, traits::tokens::nonfungibles::{Mutate, Transfer}};
 
 use super::*;
 
 impl<T: Config> Item<T::AccountId, MetadataLimitOf<T>> for Pallet<T> {
-	fn item_mint(metadata: Option<MetadataLimitOf<T>>) -> Result<ItemId, DispatchError> {
+	fn item_mint(recipient: T::AccountId, metadata: Option<MetadataLimitOf<T>>) -> Result<ItemId, DispatchError> {
 		let item_id = Self::get_next_item_id()?;
 		let item_info = ItemInfo { metadata };
 		Items::<T>::insert(item_id, item_info);
+		T::ItemNFT::mint_into(&T::ItemsClassId::get(), &item_id, &recipient)?;
 		Ok(item_id)
 	}
 
 	fn item_burn(item_id: ItemId) -> DispatchResult {
 		Items::<T>::remove(item_id);
-		Ok(())
+		T::ItemNFT::burn_from(&T::ItemsClassId::get(), &item_id)
 	}
 
+	fn item_transfer(destination: T::AccountId, item_id: ItemId) -> DispatchResult {
+		T::ItemNFT::transfer(&T::ItemsClassId::get(), &item_id, &destination)
+	}
+}
+
+impl<T: Config> ItemMetadata<MetadataLimitOf<T>> for Pallet<T> {
 	fn item_set_metadata(item_id: ItemId, metadata: MetadataLimitOf<T>) -> DispatchResult {
 		Items::<T>::try_mutate(item_id, |info| -> DispatchResult {
-			info.metadata = Some(metadata);
+			*info = Some(ItemInfo { metadata: Some(metadata) });
 			Ok(())
 		})
 	}
 
 	fn item_clear_metadata(item_id: ItemId) -> DispatchResult {
-		Items::<T>::try_mutate(item_id, |info| -> DispatchResult {
-			info.metadata = None;
-			Ok(())
-		})
+		Items::<T>::remove(item_id);
+		Ok(())
 	}
 }
+
+impl<T: Config> ItemAttributes<KeyLimitOf<T>, MetadataLimitOf<T>> for Pallet<T> {
+	fn item_set_attribute(item_id: ItemId, key: &KeyLimitOf<T>, metadata: &MetadataLimitOf<T>) -> DispatchResult {
+		Attributes::<T>::insert(item_id, key,metadata);
+		Ok(())
+	}
+
+	fn item_clear_attribute(item_id: ItemId, key: &KeyLimitOf<T>) -> DispatchResult {
+		Attributes::<T>::remove(item_id, key);
+		Ok(())
+	}
+}
+
 
 impl<T: Config> Game<T::AccountId, MetadataLimitOf<T>> for Pallet<T> {
 	fn game_mint(metadata: MetadataLimitOf<T>) -> Result<GameId, DispatchError> {
@@ -44,25 +63,5 @@ impl<T: Config> Game<T::AccountId, MetadataLimitOf<T>> for Pallet<T> {
 		// What to do with free game ID?
 		Games::<T>::remove(game_id);
 		Ok(game_id)
-	}
-}
-
-impl<T: Config> Pallet<T> {
-	pub fn get_next_item_id() -> Result<ItemId, Error<T>> {
-		// NOTE: Should we have a more sophisticated item ID generation algorithm?
-		NextItemId::<T>::try_mutate(|id| {
-			let current_id = *id;
-			*id = id.checked_add(1).ok_or(Error::<T>::NoAvailableItemId)?;
-			Ok(current_id)
-		})
-	}
-
-	pub fn get_next_game_id() -> Result<GameId, Error<T>> {
-		// NOTE: Should we have a more sophisticated game ID generation algorithm?
-		NextGameId::<T>::try_mutate(|id| {
-			let current_id = *id;
-			*id = id.checked_add(1).ok_or(Error::<T>::NoAvailableGameId)?;
-			Ok(current_id)
-		})
 	}
 }
