@@ -300,18 +300,15 @@ impl pallet_uniques::Config for Runtime {
 }
 
 parameter_types! {
-	pub const ItemsClassId: u32 = 1;
-	pub const GamesClassId: u32 = 2;
+	pub const NameLimit: u32 = 32;
 }
 
 impl asylum_core::Config for Runtime {
 	type Event = Event;
 	type ItemNFT = Uniques;
-	type GameNFT = Uniques;
 	type MetadataLimit = ValueLimit;
 	type KeyLimit = KeyLimit;
-	type ItemsClassId = ItemsClassId;
-	type GamesClassId = GamesClassId;
+	type NameLimit = NameLimit;
 }
 
 // Create the runtime by composing the FRAME pallets that were previously configured.
