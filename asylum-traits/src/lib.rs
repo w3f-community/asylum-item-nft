@@ -1,12 +1,21 @@
 #![cfg_attr(not(feature = "std"), no_std)]
 
-pub mod game;
+pub mod interpretation;
 pub mod item;
+mod proposal;
+pub mod template;
+pub mod types;
 
-pub use game::{Game, GameInfo};
-pub use item::{Item, ItemMetadata, ItemAttributes, ItemInfo};
+pub use interpretation::Interpretable;
+pub use item::{Item, Properties};
+pub use proposal::Proposal;
+pub use template::ItemTemplate;
+pub use types::*;
 
 pub mod primitives {
-	pub type GameId = u32;
 	pub type ItemId = u32;
+	pub type ItemTemplateId = u32;
+	pub type InterpretationTypeId = u32;
+	pub type InterpretationId = u32;
+	pub type ProposalId = u32;
 }
