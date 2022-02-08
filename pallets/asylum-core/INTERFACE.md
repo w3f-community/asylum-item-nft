@@ -148,7 +148,7 @@
     owner: T::AccountId,
     template_name: NameLimitOf<T>,
     metadata: MetadataLimitOf<T>,
-    interpretations: Vec<(NameLimitOf<T>, NameLimitOf<T>)>,
+    interpretations: Vec<Interpretation<NameLimitOf<T>>>,
   ) -> DispatchResult;
 
   /// Destroy template. In Asylum context Template is extended Collection of NFTs.
@@ -324,6 +324,6 @@
     origin: OriginFor<T>,
     author: T::AccountId,
     template_name_or_id: NameOrId<NameLimitOf<T>, ItemTemplateId>,
-    change_set: Vec<Change<MetadataLimitOf<T>>>,
+    change_set: Vec<Change>,
   ) -> DispatchResult;
   ```
