@@ -1,6 +1,6 @@
 		
   # Storage structure
-    
+  ```rust  
   #[pallet::storage]
 	/// Human-readable names of interpretation types
 	pub(super) type IntepretationTypeNames<T: Config> =
@@ -92,10 +92,10 @@
 		ProposalInfo<T::AccountId, MetadataLimitOf<T>>,
 		OptionQuery,
 	>;
-
+```
     
   # Dispatchable functions
-  
+  ```rust
   /// Create new interpretation type.
   ///
   /// Origin must be Signed.
@@ -326,4 +326,4 @@
     template_name_or_id: NameOrId<NameLimitOf<T>, ItemTemplateId>,
     change_set: Vec<Change<MetadataLimitOf<T>>>,
   ) -> DispatchResult;
-}
+  ```
