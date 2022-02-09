@@ -107,7 +107,8 @@
     ProposalInfo<T::AccountId, MetadataLimitOf<T>>,
     OptionQuery,
   >;
-
+  ```
+  
   # Dispatchable functions
   ```rust
   /// Create new interpretation type.
@@ -218,7 +219,7 @@
     origin: OriginFor<T>,
     recipient: T::AccountId,
     template_name_or_id: NameOrId<NameLimitOf<T>, ItemTemplateId>,
-    metadata: Option<BoundedVec<u8, T::MetadataLimit>>,
+    metadata: MetadataLimitOf<T>,
   ) -> DispatchResult;
 
   /// Destroy a single item.
@@ -309,7 +310,7 @@
     property_owner: T::AccountId,
     template_name_or_id: NameOrId<NameLimitOf<T>, ItemTemplateId>,
     item_id: ItemId,
-    key: BoundedVec<u8, T::KeyLimit>,
+    key: KeyLimitOf<T>,
   ) -> DispatchResult;
 
   /// Submit proposal with `template_name_or_id` template change. Proposal may Add/Update/Remove supported interpretations.
