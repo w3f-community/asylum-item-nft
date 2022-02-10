@@ -74,9 +74,9 @@ impl<T: Config> Item<T::AccountId, NameLimitOf<T>, MetadataLimitOf<T>> for Palle
 		item_id: ItemId,
 	) -> DispatchResult {
 		let template_id = Self::get_template_id(template_name_or_id)?;
-		let interpretation_types: Vec<_> = ItemIntepretations::<T>::iter_key_prefix((template_id, Some(item_id))).collect();
-		for interpretation_type in interpretation_types
-		{
+		let interpretation_types: Vec<_> =
+			ItemIntepretations::<T>::iter_key_prefix((template_id, Some(item_id))).collect();
+		for interpretation_type in interpretation_types {
 			ItemIntepretations::<T>::try_mutate_exists(
 				(template_id, Some(item_id), interpretation_type),
 				|interpretations| -> DispatchResult {
@@ -119,7 +119,7 @@ impl<T: Config> ItemTemplate<T::AccountId, NameLimitOf<T>, MetadataLimitOf<T>> f
 		let info = ItemTemplateInfo { owner, metadata };
 		TemplateNames::<T>::insert(template_name, template_id);
 		Templates::<T>::insert(template_id, info);
-		for Interpretation {type_name, interpretation_names} in interpretations {
+		for Interpretation { type_name, interpretation_names } in interpretations {
 			let type_id = IntepretationTypeNames::<T>::get(type_name)
 				.ok_or(Error::<T>::InterpretationTypeNotExist)?;
 			let interpretations = interpretation_names
