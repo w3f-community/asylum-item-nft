@@ -43,7 +43,7 @@ where
 #[derive(Encode, Decode, RuntimeDebug, TypeInfo, PartialEq, Eq, Clone)]
 pub struct Interpretation<BoundedName> {
 	pub type_name: BoundedName,
-	pub interpretation_names: Vec<BoundedName>
+	pub interpretation_names: Vec<BoundedName>,
 }
 
 #[derive(Encode, Decode, RuntimeDebug, TypeInfo, PartialEq, Eq, Clone)]

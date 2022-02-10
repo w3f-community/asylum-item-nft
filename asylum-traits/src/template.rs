@@ -1,10 +1,9 @@
-use crate::{primitives::*, NameOrId, Interpretation};
+use crate::{primitives::*, Interpretation, NameOrId};
 use sp_runtime::{DispatchError, DispatchResult};
 use sp_std::vec::Vec;
 
 /// Trait for providing Template(NFT collection) functionality for Asylum
 pub trait ItemTemplate<AccountId, BoundedName, BoundedString> {
-
 	///	Create new item's Template
 	///
 	/// # Arguments
