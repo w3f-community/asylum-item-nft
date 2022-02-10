@@ -15,8 +15,8 @@ mod tests;
 pub mod pallet {
 	use asylum_traits::{
 		primitives::{InterpretationId, InterpretationTypeId, ItemId, ItemTemplateId, ProposalId},
-		Change, IntepretationInfo, IntepretationTypeInfo, Interpretable, Item, ItemInfo,
-		ItemTemplate, ItemTemplateInfo, NameOrId, Proposal, ProposalInfo, Interpretation,
+		Change, IntepretationInfo, IntepretationTypeInfo, Interpretable, Interpretation, Item,
+		ItemInfo, ItemTemplate, ItemTemplateInfo, NameOrId, Proposal, ProposalInfo,
 	};
 	use frame_support::{
 		pallet_prelude::*,
@@ -24,7 +24,7 @@ pub mod pallet {
 		transactional,
 	};
 	use frame_system::{ensure_signed, pallet_prelude::OriginFor};
-	use sp_std::{vec::Vec, str::Bytes};
+	use sp_std::vec::Vec;
 
 	pub type MetadataLimitOf<T> = BoundedVec<u8, <T as Config>::MetadataLimit>;
 	pub type KeyLimitOf<T> = BoundedVec<u8, <T as Config>::KeyLimit>;
@@ -71,7 +71,7 @@ pub mod pallet {
 	pub(super) type NextProposalId<T: Config> = StorageValue<_, ProposalId, ValueQuery>;
 
 	#[pallet::storage]
-	#[pallet::getter(fn attributes)]
+	#[pallet::getter(fn properties)]
 	pub(super) type Properties<T: Config> = StorageDoubleMap<
 		_,
 		Twox64Concat,
@@ -83,21 +83,25 @@ pub mod pallet {
 	>;
 
 	#[pallet::storage]
+	#[pallet::getter(fn interpretation_type_id)]
 	/// Human-readable names of interpretation types
 	pub(super) type IntepretationTypeNames<T: Config> =
 		StorageMap<_, Blake2_128Concat, NameLimitOf<T>, InterpretationTypeId, OptionQuery>; //genesis config
 
 	#[pallet::storage]
+	#[pallet::getter(fn interpretation_id)]
 	/// Human-readable names of interpretations
 	pub(super) type IntepretationNames<T: Config> =
 		StorageMap<_, Blake2_128Concat, NameLimitOf<T>, InterpretationId, OptionQuery>;
 
 	#[pallet::storage]
+	#[pallet::getter(fn template_id)]
 	/// Human-readable names of templates
 	pub(super) type TemplateNames<T: Config> =
 		StorageMap<_, Blake2_128Concat, NameLimitOf<T>, ItemTemplateId, OptionQuery>;
 
 	#[pallet::storage]
+	#[pallet::getter(fn interpretation_type_info)]
 	/// Interpretation type's infos
 	pub(super) type IntepretationTypes<T: Config> = StorageMap<
 		_,
@@ -108,6 +112,7 @@ pub mod pallet {
 	>;
 
 	#[pallet::storage]
+	#[pallet::getter(fn interpretation_info)]
 	/// Interpretation's infos
 	pub(super) type Intepretations<T: Config> = StorageMap<
 		_,
@@ -118,6 +123,7 @@ pub mod pallet {
 	>;
 
 	#[pallet::storage]
+	#[pallet::getter(fn template_info)]
 	/// Template's infos
 	pub(super) type Templates<T: Config> = StorageMap<
 		_,
@@ -128,6 +134,7 @@ pub mod pallet {
 	>;
 
 	#[pallet::storage]
+	#[pallet::getter(fn item_interpretations)]
 	/// Interpretations supported by Items
 	pub(super) type ItemIntepretations<T: Config> = StorageNMap<
 		_,
@@ -141,6 +148,7 @@ pub mod pallet {
 	>;
 
 	#[pallet::storage]
+	#[pallet::getter(fn template_interpretations)]
 	/// Interpretations supported by Template
 	pub(super) type TemplateIntepretations<T: Config> = StorageDoubleMap<
 		_,
@@ -153,7 +161,7 @@ pub mod pallet {
 	>;
 
 	#[pallet::storage]
-	#[pallet::getter(fn items)]
+	#[pallet::getter(fn item_info)]
 	/// Item's infos
 	pub(super) type Items<T: Config> = StorageDoubleMap<
 		_,
@@ -165,9 +173,71 @@ pub mod pallet {
 	>;
 
 	#[pallet::storage]
+	#[pallet::getter(fn proposal_info)]
 	/// Proposal's infos
 	pub(super) type Proposals<T: Config> =
 		StorageMap<_, Twox64Concat, ProposalId, ProposalInfo<T::AccountId>, OptionQuery>;
+
+	#[pallet::genesis_config]
+	pub struct GenesisConfig<T: Config> {
+		pub interpretation_types: Vec<(String, String)>,
+		pub interpretations: Vec<(String, String, String)>,
+		_marker: PhantomData<T>,
+	}
+
+	#[cfg(feature = "std")]
+	impl<T: Config> GenesisConfig<T> {
+		pub fn new(
+			interpretation_types: Vec<(String, String)>,
+			interpretations: Vec<(String, String, String)>,
+		) -> Self {
+			Self { interpretation_types, interpretations, _marker: Default::default() }
+		}
+	}
+
+	#[cfg(feature = "std")]
+	impl<T: Config> Default for GenesisConfig<T> {
+		fn default() -> Self {
+			Self {
+				interpretation_types: Default::default(),
+				interpretations: Default::default(),
+				_marker: Default::default(),
+			}
+		}
+	}
+
+	#[pallet::genesis_build]
+	impl<T: Config> GenesisBuild<T> for GenesisConfig<T> {
+		fn build(&self) {
+			fn bounded<T>(string: &str) -> BoundedVec<u8, T>
+			where
+				T: Get<u32>,
+			{
+				TryInto::<BoundedVec<u8, T>>::try_into(string.as_bytes().to_vec()).unwrap()
+			}
+
+			let mut i = 0;
+			for (type_name, metadata) in &self.interpretation_types {
+				let metadata = bounded(metadata);
+				let type_name = bounded(type_name);
+				let type_info = IntepretationTypeInfo { metadata };
+				IntepretationTypeNames::<T>::insert(type_name, i);
+				IntepretationTypes::<T>::insert(i, type_info);
+				i += 1;
+			}
+
+			i = 0;
+			for (interpretation_name, src, metadata) in &self.interpretations {
+				let metadata = bounded(metadata);
+				let src = bounded(src);
+				let interpretation_name = bounded(interpretation_name);
+				let info = IntepretationInfo { src, metadata };
+				IntepretationNames::<T>::insert(interpretation_name, i);
+				Intepretations::<T>::insert(i, info);
+				i += 1;
+			}
+		}
+	}
 
 	#[pallet::event]
 	#[pallet::generate_deposit(pub(super) fn deposit_event)]

@@ -1,6 +1,6 @@
 use node_asylum_runtime::{
-	AccountId, AuraConfig, BalancesConfig, GenesisConfig, GrandpaConfig, Signature, SudoConfig,
-	SystemConfig, WASM_BINARY,
+	AccountId, AsylumConfig, AuraConfig, BalancesConfig, GenesisConfig, GrandpaConfig, Signature,
+	SudoConfig, SystemConfig, WASM_BINARY,
 };
 use sc_service::ChainType;
 use sp_consensus_aura::sr25519::AuthorityId as AuraId;
@@ -149,6 +149,19 @@ fn testnet_genesis(
 			// Assign network admin rights.
 			key: root_key,
 		},
-		transaction_payment: Default::default()
+		transaction_payment: Default::default(),
+		asylum: AsylumConfig::new(
+			vec![
+				("Type15".to_string(), "".to_string()),
+				("Type63".to_string(), "".to_string()),
+				("Type90".to_string(), "".to_string()),
+				("Type96".to_string(), "".to_string()),
+			],
+			vec![
+				("Interpretation1".to_string(), "".to_string(), "".to_string()),
+				("Interpretation2".to_string(), "".to_string(), "".to_string()),
+				("Interpretation2".to_string(), "".to_string(), "".to_string()),
+			],
+		),
 	}
 }
