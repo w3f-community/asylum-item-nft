@@ -4,25 +4,36 @@
   pub type KeyLimitOf<T> = BoundedVec<u8, <T as Config>::KeyLimit>;
   pub type NameLimitOf<T> = BoundedVec<u8, <T as Config>::NameLimit>;
 
-  pub trait Config: frame_system::Config {
-    type Event: From<Event<Self>> + IsType<<Self as frame_system::Config>::Event>;
+ 	#[pallet::config]
+	pub trait Config: frame_system::Config {
+		type Event: From<Event<Self>> + IsType<<Self as frame_system::Config>::Event>;
 
-    /// Nonfungible token functionality
-    type ItemNFT: Inspect<Self::AccountId, ClassId = ItemTemplateId, InstanceId = ItemId>
-      + Create<Self::AccountId>
-      + Destroy<Self::AccountId>
-      + Mutate<Self::AccountId>
-      + Transfer<Self::AccountId>;
+    // pallet_uniques
+		type ItemNFT: Inspect<Self::AccountId, ClassId = ItemTemplateId, InstanceId = ItemId>
+			+ Create<Self::AccountId>
+			+ Destroy<Self::AccountId>
+			+ Mutate<Self::AccountId>
+			+ Transfer<Self::AccountId>;
 
-    #[pallet::constant]
-    type MetadataLimit: Get<u32>;
+    // pallet_rmrk_core
+		type ItemRMRKCore: Collection<MetadataLimitOf<Self>, Self::AccountId>
+			+ Nft<Self::AccountId, MetadataLimitOf<Self>>
+			+ Resource<MetadataLimitOf<Self>, Self::AccountId>
+			+ Property<KeyLimitOf<Self>, MetadataLimitOf<Self>, Self::AccountId>;
 
-    #[pallet::constant]
-    type KeyLimit: Get<u32>;
+    // pallet_rmrk_equip
+		type ItemRMRKEquip: Base<Self::AccountId, ItemTemplateId, ItemId, MetadataLimitOf<Self>>
+			+ Part<Self::AccountId, MetadataLimitOf<Self>>;
 
-    #[pallet::constant]
-    type NameLimit: Get<u32>;
-  }
+		#[pallet::constant]
+		type MetadataLimit: Get<u32>;
+
+		#[pallet::constant]
+		type KeyLimit: Get<u32>;
+
+		#[pallet::constant]
+		type NameLimit: Get<u32>;
+	}
   ```
 
   # Storage structure
@@ -35,69 +46,16 @@
   pub(super) type IntepretationNames<T: Config> =
     StorageMap<_, Blake2_128Concat, NameLimitOf<T>, InterpretationId, OptionQuery>;
 
-  /// Human-readable names of templates
-  pub(super) type TemplateNames<T: Config> =
-    StorageMap<_, Blake2_128Concat, NameLimitOf<T>, ItemTemplateId, OptionQuery>;
-
-  /// Interpretation type's infos
-  pub(super) type IntepretationTypes<T: Config> = StorageMap<
-    _,
-    Twox64Concat,
-    InterpretationTypeId,
-    IntepretationTypeInfo<MetadataLimitOf<T>>,
-    OptionQuery,
-  >;
-
-  /// Interpretation's infos
-  pub(super) type Intepretations<T: Config> = StorageMap<
-    _,
-    Twox64Concat,
-    InterpretationId,
-    IntepretationInfo<MetadataLimitOf<T>>,
-    OptionQuery,
-  >;
-
-  /// Template's infos
-  pub(super) type Templates<T: Config> = StorageMap<
-    _,
-    Twox64Concat,
-    ItemTemplateId,
-    ItemTemplateInfo<T::AccountId, MetadataLimitOf<T>>,
-    OptionQuery,
-  >;
-
-  /// Interpretations supported by Items
-  pub(super) type ItemIntepretations<T: Config> = StorageNMap<
-    _,
-    (
-      NMapKey<Twox64Concat, ItemTemplateId>,
-      NMapKey<Twox64Concat, Option<ItemId>>,
-      NMapKey<Twox64Concat, InterpretationTypeId>,
-    ),
-    Vec<InterpretationId>,
-    OptionQuery,
-  >;
-
-  /// Interpretations supported by Template
-  pub(super) type TemplateIntepretations<T: Config> = StorageDoubleMap<
-    _,
-    Twox64Concat,
-    ItemTemplateId,
-    Twox64Concat,
-    InterpretationTypeId,
-    Vec<InterpretationId>,
-    OptionQuery,
-  >;
-
-  /// Item's infos
-  pub(super) type Items<T: Config> = StorageDoubleMap<
-    _,
-    Twox64Concat,
-    ItemTemplateId,
-    Twox64Concat,
-    ItemId,
-    ItemInfo<MetadataLimitOf<T>>,
-  >;
+	/// Interpretations supported by Template
+	pub(super) type TemplateIntepretations<T: Config> = StorageDoubleMap<
+		_,
+		Twox64Concat,
+		ItemTemplateId,
+		Twox64Concat,
+		rmrk_traits::primitives::BaseId,
+		Vec<rmrk_traits::primitives::PartId>,
+		OptionQuery,
+	>;
 
   /// Proposal's infos
   pub(super) type Proposals<T: Config> = StorageMap<
@@ -130,6 +88,7 @@
   ///
   /// Origin must be Signed.
   ///
+  /// - `type_name`: The interpretation type of interpretation to be created.
   /// - `interpretation_name`: The interpretation to be created.
   /// - `src`: The link to the media file stored somewhere (for example ipfs).
   /// - `metadata`: The link to the interpretation type description stored somewhere (for example ipfs).
@@ -138,6 +97,7 @@
   ///
   pub fn create_interpretation(
     origin: OriginFor<T>,
+    type_name: NameLimitOf<T>,
     interpretation_name: NameLimitOf<T>,
     src: MetadataLimitOf<T>,
     metadata: MetadataLimitOf<T>,
