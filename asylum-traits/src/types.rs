@@ -5,19 +5,9 @@ use sp_std::vec::Vec;
 
 use crate::primitives::*;
 
-#[derive(Encode, Decode, RuntimeDebug, TypeInfo, PartialEq, Eq, Clone)]
-pub enum NameOrId<BoundedName, Id> {
-	Name(BoundedName),
-	Id(Id),
-}
-
-#[derive(Encode, Decode, Default, RuntimeDebug, TypeInfo, PartialEq, Eq)]
-pub struct ItemInfo<BoundedString> {
-	pub metadata: Option<BoundedString>,
-}
-
 #[derive(Encode, Decode, Default, RuntimeDebug, TypeInfo, PartialEq, Eq, Clone, Copy)]
 pub struct IntepretationInfo<BoundedString> {
+	pub name: BoundedString,
 	// media
 	pub src: BoundedString,
 	//
@@ -30,20 +20,10 @@ pub struct IntepretationTypeInfo<BoundedString> {
 	pub metadata: BoundedString,
 }
 
-#[derive(Encode, Decode, Default, RuntimeDebug, TypeInfo, PartialEq, Eq)]
-pub struct ItemTemplateInfo<AccountId, BoundedString>
-where
-	AccountId: Encode + Decode,
-{
-	pub owner: AccountId,
-	// ipfs hash
-	pub metadata: BoundedString,
-}
-
 #[derive(Encode, Decode, RuntimeDebug, TypeInfo, PartialEq, Eq, Clone)]
 pub struct Interpretation<BoundedName> {
 	pub type_name: BoundedName,
-	pub interpretation_names: Vec<BoundedName>,
+	pub interpretation_ids: Vec<InterpretationId>,
 }
 
 #[derive(Encode, Decode, RuntimeDebug, TypeInfo, PartialEq, Eq, Clone)]

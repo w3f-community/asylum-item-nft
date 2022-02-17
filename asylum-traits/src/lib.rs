@@ -2,7 +2,7 @@
 
 pub mod interpretation;
 pub mod item;
-mod proposal;
+pub mod proposal;
 pub mod template;
 pub mod types;
 

@@ -1,14 +1,16 @@
-use crate::{primitives::*, Interpretation, NameOrId};
+use crate::{
+	primitives::{ItemTemplateId, ProposalId},
+	Interpretation,
+};
 use sp_runtime::{DispatchError, DispatchResult};
 use sp_std::vec::Vec;
 
 /// Trait for providing Template(NFT collection) functionality for Asylum
-pub trait ItemTemplate<AccountId, BoundedName, BoundedString> {
+pub trait ItemTemplate<AccountId, BoundedString> {
 	///	Create new item's Template
 	///
 	/// # Arguments
 	///
-	/// * `owner` - Template's owner
 	/// * `template_name` - Template's name
 	/// * `metadata` - A bounded string that hold ifsh hash to metadata
 	/// * `interpretations` - vec of pair of (InterpretationTypeName, InterpretationName)
@@ -17,10 +19,8 @@ pub trait ItemTemplate<AccountId, BoundedName, BoundedString> {
 	///
 	/// Ok(id) of newly create template
 	fn template_create(
-		owner: AccountId,
-		template_name: &BoundedName,
-		metadata: BoundedString,
-		interpretations: Vec<Interpretation<BoundedName>>,
+		template_id: ItemTemplateId,
+		interpretations: Vec<Interpretation<BoundedString>>,
 	) -> Result<ItemTemplateId, DispatchError>;
 
 	///	Update item's Template according to approved proposal
@@ -30,22 +30,7 @@ pub trait ItemTemplate<AccountId, BoundedName, BoundedString> {
 	/// * `proposal_id` - Template's update proposal id
 	/// * `template_name_or_id` - Template's id or name
 	///
-	fn template_update(
-		proposal_id: ProposalId,
-		template_name_or_id: NameOrId<BoundedName, ItemTemplateId>,
-	) -> DispatchResult;
-
-	///	Create new item's Template
-	///
-	/// # Arguments
-	///
-	/// * `template_name_or_id` - Template's id or name
-	/// * `new_issuer` - Template's new issuer
-	///
-	fn template_change_issuer(
-		template_name_or_id: NameOrId<BoundedName, ItemTemplateId>,
-		new_issuer: AccountId,
-	) -> DispatchResult;
+	fn template_update(proposal_id: ProposalId, template_id: ItemTemplateId) -> DispatchResult;
 
 	///	Destroy empty template
 	///
@@ -58,5 +43,5 @@ pub trait ItemTemplate<AccountId, BoundedName, BoundedString> {
 	/// # Return
 	///
 	/// Ok(id) of destroyed template
-	fn template_destroy(template_name: &BoundedName) -> Result<ItemTemplateId, DispatchError>;
+	fn template_destroy(template_id: ItemTemplateId) -> Result<ItemTemplateId, DispatchError>;
 }

@@ -3,7 +3,7 @@ use sp_runtime::DispatchError;
 use crate::primitives::*;
 
 /// Trait for providing control over Asylum Item interpretations
-pub trait Interpretable<BoundedName, BoundedString> {
+pub trait Interpretable<BoundedString> {
 	/// Create new interpretation type
 	///
 	/// # Arguments
@@ -15,7 +15,7 @@ pub trait Interpretable<BoundedName, BoundedString> {
 	///
 	/// Id of newly create interpretation type
 	fn interpretation_type_create(
-		type_name: &BoundedName,
+		type_name: &BoundedString,
 		metadata: BoundedString,
 	) -> Result<InterpretationTypeId, DispatchError>;
 
@@ -31,7 +31,8 @@ pub trait Interpretable<BoundedName, BoundedString> {
 	///
 	/// Id of newly create interpretation
 	fn interpretation_create(
-		interpretation_name: &BoundedName,
+		type_name: &BoundedString,
+		interpretation_name: BoundedString,
 		src: BoundedString,
 		metadata: BoundedString,
 	) -> Result<InterpretationId, DispatchError>;
