@@ -6,11 +6,35 @@ authors = ['Supercolony <https://supercolony.net/> & Asylum <https://asylum.spac
 homepage = 'https://asylum.space/'
 edition = "2021"
 
+[package.metadata.docs.rs]
+targets = ['x86_64-unknown-linux-gnu']
+
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
 [dependencies.asylum-traits]
 default-features = false
 path = '../../asylum-traits'
+
+[dependencies.rmrk-traits]
+default-features = false
+git = 'https://github.com/rmrk-team/rmrk-substrate.git'
+branch = 'equip-pallet-brandon-wip'
+package = 'rmrk-traits'
+version = '0.0.1'
+
+[dependencies.pallet-rmrk-core]
+default-features = false
+git = 'https://github.com/rmrk-team/rmrk-substrate.git'
+branch = 'equip-pallet-brandon-wip'
+package = 'pallet-rmrk-core'
+version = '4.0.0-dev'
+
+[dependencies.pallet-rmrk-equip]
+default-features = false
+git = 'https://github.com/rmrk-team/rmrk-substrate.git'
+branch = 'equip-pallet-brandon-wip'
+package = 'pallet-rmrk-equip'
+version = '4.0.0-dev'
 
 [dependencies.codec]
 default-features = false
@@ -22,19 +46,19 @@ version = '2.0.0'
 default-features = false
 git = 'https://github.com/paritytech/substrate.git'
 optional = true
-tag = 'monthly-2021-12'
+tag = 'monthly-2022-01'
 version = '4.0.0-dev'
 
 [dependencies.frame-support]
 default-features = false
 git = 'https://github.com/paritytech/substrate.git'
-tag = 'monthly-2021-12'
+tag = 'monthly-2022-01'
 version = '4.0.0-dev'
 
 [dependencies.frame-system]
 default-features = false
 git = 'https://github.com/paritytech/substrate.git'
-tag = 'monthly-2021-12'
+tag = 'monthly-2022-01'
 version = '4.0.0-dev'
 
 [dependencies.scale-info]
@@ -45,37 +69,37 @@ version = '1.0'
 [dependencies.sp-std]
 default-features = false
 git = 'https://github.com/paritytech/substrate.git'
-tag = 'monthly-2021-11-1'
-version = '4.0.0-dev'
+tag = 'monthly-2022-01'
+version = '4.0.0'
 
 [dependencies.sp-runtime]
 default-features = false
 git = 'https://github.com/paritytech/substrate.git'
-tag = 'monthly-2021-12'
-version = '4.0.0-dev'
+tag = 'monthly-2022-01'
+version = '4.0.0'
 
 [dev-dependencies.sp-core]
 default-features = false
 git = 'https://github.com/paritytech/substrate.git'
-tag = 'monthly-2021-12'
-version = '4.0.0-dev'
+tag = 'monthly-2022-01'
+version = '4.1.0-dev'
 
 [dev-dependencies.sp-io]
 default-features = false
 git = 'https://github.com/paritytech/substrate.git'
-tag = 'monthly-2021-12'
+tag = 'monthly-2022-01'
 version = '4.0.0-dev'
 
 [dev-dependencies.pallet-balances]
 default-features = false
 git = 'https://github.com/paritytech/substrate.git'
-tag = 'monthly-2021-12'
+tag = 'monthly-2022-01'
 version = '4.0.0-dev'
 
-[dev-dependencies.pallet-uniques]
+[dependencies.pallet-uniques]
 default-features = false
 git = 'https://github.com/paritytech/substrate.git'
-tag = 'monthly-2021-12'
+tag = 'monthly-2022-01'
 version = '4.0.0-dev'
 
 [features]
@@ -88,6 +112,7 @@ std = [
     'sp-std/std',
     'sp-runtime/std',
     'pallet-uniques/std',
-    'pallet-balances/std'
+    'pallet-balances/std',
+    'rmrk-traits/std'
 ]
 try-runtime = ['frame-support/try-runtime']
