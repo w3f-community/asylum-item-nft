@@ -6,6 +6,7 @@
 #[cfg(feature = "std")]
 include!(concat!(env!("OUT_DIR"), "/wasm_binary.rs"));
 
+use frame_support::traits::ConstU32;
 use pallet_grandpa::{
 	fg_primitives, AuthorityId as GrandpaId, AuthorityList as GrandpaAuthorityList,
 };
@@ -97,6 +98,7 @@ pub const VERSION: RuntimeVersion = RuntimeVersion {
 	//   the compatible custom types.
 	spec_version: 100,
 	impl_version: 1,
+	state_version: 1,
 	apis: RUNTIME_API_VERSIONS,
 	transaction_version: 1,
 };
@@ -188,6 +190,7 @@ impl frame_system::Config for Runtime {
 	type SS58Prefix = SS58Prefix;
 	/// The set code logic, just the default since we're not a parachain.
 	type OnSetCode = ();
+	type MaxConsumers = ConstU32<32>;
 }
 
 impl pallet_randomness_collective_flip::Config for Runtime {}
@@ -300,15 +303,19 @@ impl pallet_uniques::Config for Runtime {
 }
 
 parameter_types! {
-	pub const NameLimit: u32 = 32;
+	pub const MaxRecursions: u32 = 10;
+}
+
+impl pallet_rmrk_core::Config for Runtime {
+	type Event = Event;
+	type ProtocolOrigin = frame_system::EnsureRoot<AccountId>;
+	type MaxRecursions = MaxRecursions;
 }
 
 impl asylum_core::Config for Runtime {
 	type Event = Event;
 	type ItemNFT = Uniques;
-	type MetadataLimit = ValueLimit;
-	type KeyLimit = KeyLimit;
-	type NameLimit = NameLimit;
+	type ItemRMRKCore = RmrkCore;
 }
 
 // Create the runtime by composing the FRAME pallets that were previously configured.
@@ -328,6 +335,7 @@ construct_runtime!(
 		Sudo: pallet_sudo,
 		// Include the custom logic from the pallet-template in the runtime.
 		Uniques: pallet_uniques,
+		RmrkCore: pallet_rmrk_core,
 		Asylum: asylum_core,
 	}
 );

@@ -147,21 +147,29 @@ fn testnet_genesis(
 		},
 		sudo: SudoConfig {
 			// Assign network admin rights.
-			key: root_key,
+			key: Some(root_key),
 		},
 		transaction_payment: Default::default(),
-		asylum: AsylumConfig::new(
+		asylum: AsylumConfig::new(vec![(
+			"type_2D".to_string(),
+			"ipfs://type_2D_metadata_hash".to_string(),
 			vec![
-				("Type15".to_string(), "".to_string()),
-				("Type63".to_string(), "".to_string()),
-				("Type90".to_string(), "".to_string()),
-				("Type96".to_string(), "".to_string()),
+				(
+					"2D_pixel".to_string(),
+					"ipfs://2D_pixel_src_hash".to_string(),
+					"ipfs://2D_pixel_metadata_hash".to_string(),
+				),
+				(
+					"2D_comics".to_string(),
+					"ipfs://2D_comics_src_hash".to_string(),
+					"ipfs://2D_comics_metadata_hash".to_string(),
+				),
+				(
+					"2D_anime".to_string(),
+					"ipfs://2D_anime_src_hash".to_string(),
+					"ipfs://2D_anime_metadata_hash".to_string(),
+				),
 			],
-			vec![
-				("Interpretation1".to_string(), "".to_string(), "".to_string()),
-				("Interpretation2".to_string(), "".to_string(), "".to_string()),
-				("Interpretation2".to_string(), "".to_string(), "".to_string()),
-			],
-		),
+		)]),
 	}
 }
