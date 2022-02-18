@@ -1,17 +1,22 @@
+use std::collections::BTreeSet;
+
 use asylum_traits::primitives::{
 	InterpretationId, InterpretationTypeId, ItemId, ItemTemplateId, ProposalId,
 };
 use asylum_traits::*;
-use frame_support::{ensure, traits::tokens::nonfungibles::Transfer};
+use frame_support::ensure;
 use sp_runtime::{DispatchError, DispatchResult};
 use sp_std::vec::Vec;
 
 use super::*;
 
-impl<T: Config> Interpretable<NameLimitOf<T>, MetadataLimitOf<T>> for Pallet<T> {
+impl<T: Config> Interpretable<StringLimitOf<T>> for Pallet<T>
+where
+	T: pallet_uniques::Config<ClassId = ItemTemplateId, InstanceId = ItemId>,
+{
 	fn interpretation_type_create(
-		type_name: &NameLimitOf<T>,
-		metadata: MetadataLimitOf<T>,
+		type_name: &StringLimitOf<T>,
+		metadata: StringLimitOf<T>,
 	) -> Result<InterpretationTypeId, DispatchError> {
 		ensure!(
 			!IntepretationTypeNames::<T>::contains_key(&type_name),
@@ -25,120 +30,85 @@ impl<T: Config> Interpretable<NameLimitOf<T>, MetadataLimitOf<T>> for Pallet<T> 
 	}
 
 	fn interpretation_create(
-		interpretation_name: &NameLimitOf<T>,
-		src: MetadataLimitOf<T>,
-		metadata: MetadataLimitOf<T>,
+		type_name: &StringLimitOf<T>,
+		interpretation_name: StringLimitOf<T>,
+		src: StringLimitOf<T>,
+		metadata: StringLimitOf<T>,
 	) -> Result<InterpretationId, DispatchError> {
-		ensure!(
-			!IntepretationNames::<T>::contains_key(&interpretation_name),
-			Error::<T>::InterpretationAlreadyExist
-		);
+		let type_id = Self::interpretation_type_id(type_name)
+			.ok_or(Error::<T>::InterpretationTypeNotExist)?;
 		let id = Self::get_next_interpretation_id()?;
-		let info = IntepretationInfo { src, metadata };
-		IntepretationNames::<T>::insert(interpretation_name, id);
-		Intepretations::<T>::insert(id, info);
+		let info = IntepretationInfo { name: interpretation_name, src, metadata };
+		Intepretations::<T>::insert(type_id, id, info);
 		Ok(id)
 	}
 }
 
-impl<T: Config> Item<T::AccountId, NameLimitOf<T>, MetadataLimitOf<T>> for Pallet<T> {
-	fn item_mint(
-		template_name_or_id: NameOrId<NameLimitOf<T>, ItemTemplateId>,
-		metadata: Option<MetadataLimitOf<T>>,
+impl<T: Config> Item<T::AccountId, StringLimitOf<T>, StringLimitOf<T>> for Pallet<T>
+where
+	T: pallet_uniques::Config<ClassId = ItemTemplateId, InstanceId = ItemId>,
+{
+	fn item_mint_from_template(
+		template_id: ItemTemplateId,
+		item_id: ItemId,
 	) -> Result<(ItemTemplateId, ItemId), DispatchError> {
-		let template_id = Self::get_template_id(template_name_or_id)?;
-		let item_id = Self::get_next_item_id()?;
-		let info = ItemInfo { metadata };
-		Items::<T>::insert(template_id, item_id, info);
 		for (type_id, interpretation_id) in TemplateIntepretations::<T>::iter_prefix(template_id) {
-			ItemIntepretations::<T>::insert(
-				(template_id, Some(item_id), type_id),
-				interpretation_id,
-			);
+			ItemIntepretations::<T>::insert((template_id, item_id, type_id), interpretation_id);
 		}
 		Ok((template_id, item_id))
 	}
 
 	fn item_burn(
-		template_name_or_id: NameOrId<NameLimitOf<T>, ItemTemplateId>,
+		template_id: ItemTemplateId,
 		item_id: ItemId,
 	) -> Result<(ItemTemplateId, ItemId), DispatchError> {
-		let template_id = Self::get_template_id(template_name_or_id)?;
-		Items::<T>::remove(template_id, item_id);
-		ItemIntepretations::<T>::remove_prefix((template_id, Some(item_id)), None);
+		ItemIntepretations::<T>::remove_prefix((template_id, item_id), None);
 		Ok((template_id, item_id))
 	}
 
-	fn item_update(
-		template_name_or_id: NameOrId<NameLimitOf<T>, ItemTemplateId>,
-		item_id: ItemId,
-	) -> DispatchResult {
-		let template_id = Self::get_template_id(template_name_or_id)?;
-		let interpretation_types: Vec<_> =
-			ItemIntepretations::<T>::iter_key_prefix((template_id, Some(item_id))).collect();
-		for interpretation_type in interpretation_types {
-			ItemIntepretations::<T>::try_mutate_exists(
-				(template_id, Some(item_id), interpretation_type),
+	fn item_update(template_id: ItemTemplateId, item_id: ItemId) -> DispatchResult {
+		let current_item_state: BTreeSet<_> =
+			ItemIntepretations::<T>::iter_key_prefix((template_id, item_id)).collect();
+		let current_template_state: BTreeSet<_> =
+			TemplateIntepretations::<T>::iter_key_prefix(template_id).collect();
+		let types_to_remove = current_item_state.difference(&current_template_state);
+		for interpretation_type in types_to_remove {
+			ItemIntepretations::<T>::remove((template_id, item_id, interpretation_type));
+		}
+		for interpretation_type in current_template_state {
+			ItemIntepretations::<T>::try_mutate(
+				(template_id, item_id, interpretation_type),
 				|interpretations| -> DispatchResult {
-					if !TemplateIntepretations::<T>::contains_key(template_id, interpretation_type)
-					{
-						*interpretations = None;
-					} else {
-						*interpretations =
-							TemplateIntepretations::<T>::get(template_id, interpretation_type);
-					}
+					*interpretations =
+						TemplateIntepretations::<T>::get(template_id, interpretation_type);
 					Ok(())
 				},
-			)?
+			)?;
 		}
 		Ok(())
 	}
-
-	fn item_transfer(
-		destination: &T::AccountId,
-		template_name_or_id: NameOrId<NameLimitOf<T>, ItemTemplateId>,
-		item_id: ItemId,
-	) -> DispatchResult {
-		let template_id = Self::get_template_id(template_name_or_id)?;
-		T::ItemNFT::transfer(&template_id, &item_id, destination)
-	}
 }
 
-impl<T: Config> ItemTemplate<T::AccountId, NameLimitOf<T>, MetadataLimitOf<T>> for Pallet<T> {
+impl<T: Config> ItemTemplate<T::AccountId, StringLimitOf<T>> for Pallet<T>
+where
+	T: pallet_uniques::Config<ClassId = ItemTemplateId, InstanceId = ItemId>,
+{
 	fn template_create(
-		owner: T::AccountId,
-		template_name: &NameLimitOf<T>,
-		metadata: MetadataLimitOf<T>,
-		interpretations: Vec<Interpretation<NameLimitOf<T>>>,
+		template_id: ItemTemplateId,
+		interpretations: Vec<Interpretation<StringLimitOf<T>>>,
 	) -> Result<ItemTemplateId, DispatchError> {
-		ensure!(
-			!TemplateNames::<T>::contains_key(&template_name),
-			Error::<T>::TemplateAlreadyExist
-		);
-		let template_id = Self::get_next_template_id()?;
-		let info = ItemTemplateInfo { owner, metadata };
-		TemplateNames::<T>::insert(template_name, template_id);
-		Templates::<T>::insert(template_id, info);
-		for Interpretation { type_name, interpretation_names } in interpretations {
+		for Interpretation { type_name, interpretation_ids } in interpretations {
 			let type_id = IntepretationTypeNames::<T>::get(type_name)
 				.ok_or(Error::<T>::InterpretationTypeNotExist)?;
-			let interpretations = interpretation_names
-				.iter()
-				.map(|name| {
-					IntepretationNames::<T>::get(name).ok_or(Error::<T>::InterpretationNotExist)
-				})
-				.collect::<Result<Vec<_>, _>>()?;
-			TemplateIntepretations::<T>::insert(template_id, type_id, interpretations);
+			// maybe check for interpretation existance
+			TemplateIntepretations::<T>::insert(template_id, type_id, interpretation_ids);
 		}
 		Ok(template_id)
 	}
 
-	fn template_update(
-		proposal_id: ProposalId,
-		template_name_or_id: NameOrId<NameLimitOf<T>, ItemTemplateId>,
-	) -> DispatchResult {
-		let template_id = Self::get_template_id(template_name_or_id)?;
+	fn template_update(proposal_id: ProposalId, template_id: ItemTemplateId) -> DispatchResult {
 		let proposal_info = Proposals::<T>::get(proposal_id).ok_or(Error::<T>::ProposalNotExist)?;
+		// TODO: check owner
 		ensure!(proposal_info.state == ProposalState::Approved, Error::<T>::ProposalNotApproved);
 		ensure!(
 			proposal_info.template_id == template_id,
@@ -189,37 +159,22 @@ impl<T: Config> ItemTemplate<T::AccountId, NameLimitOf<T>, MetadataLimitOf<T>> f
 		Ok(())
 	}
 
-	fn template_change_issuer(
-		template_name_or_id: NameOrId<NameLimitOf<T>, ItemTemplateId>,
-		new_issuer: T::AccountId,
-	) -> DispatchResult {
-		let template_id = Self::get_template_id(template_name_or_id)?;
-		Templates::<T>::try_mutate(template_id, |info| -> DispatchResult {
-			if let Some(template_info) = info {
-				template_info.owner = new_issuer;
-			}
-			Ok(())
-		})
-	}
-
-	fn template_destroy(template_name: &NameLimitOf<T>) -> Result<ItemTemplateId, DispatchError> {
-		let template_id =
-			TemplateNames::<T>::take(template_name).ok_or(Error::<T>::TemplateNotExist)?;
-		ensure!(Items::<T>::iter_prefix(template_id).count() == 0, Error::<T>::TemplateNotEmpty);
-		Templates::<T>::remove(template_id);
+	fn template_destroy(template_id: ItemTemplateId) -> Result<ItemTemplateId, DispatchError> {
 		TemplateIntepretations::<T>::remove_prefix(template_id, None);
 		Ok(template_id)
 	}
 }
 
-impl<T: Config> Proposal<T::AccountId, NameLimitOf<T>> for Pallet<T> {
+impl<T: Config> Proposal<T::AccountId> for Pallet<T>
+where
+	T: pallet_uniques::Config<ClassId = ItemTemplateId, InstanceId = ItemId>,
+{
 	fn submit_proposal(
 		author: T::AccountId,
-		template_name_or_id: NameOrId<NameLimitOf<T>, ItemTemplateId>,
+		template_id: ItemTemplateId,
 		change_set: Vec<Change>,
 	) -> Result<ProposalId, DispatchError> {
 		let proposal_id = Self::get_next_proposal_id()?;
-		let template_id = Self::get_template_id(template_name_or_id)?;
 		let proposal_info =
 			ProposalInfo { author, state: ProposalState::Approved, template_id, change_set };
 		Proposals::<T>::insert(proposal_id, proposal_info);

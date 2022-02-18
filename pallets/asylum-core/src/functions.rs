@@ -1,4 +1,4 @@
-use asylum_traits::{primitives::*, NameOrId};
+use asylum_traits::primitives::*;
 
 use super::*;
 
@@ -46,16 +46,5 @@ impl<T: Config> Pallet<T> {
 			*id = id.checked_add(1).ok_or(Error::<T>::NoAvailableId)?;
 			Ok(current_id)
 		})
-	}
-
-	pub fn get_template_id(
-		template_name_or_id: NameOrId<NameLimitOf<T>, ItemTemplateId>,
-	) -> Result<ItemTemplateId, Error<T>> {
-		match template_name_or_id {
-			NameOrId::Name(name) => {
-				TemplateNames::<T>::get(name).ok_or(Error::<T>::TemplateNotExist)
-			},
-			NameOrId::Id(id) => Ok(id),
-		}
 	}
 }

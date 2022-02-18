@@ -1,7 +1,8 @@
 use crate as asylum_core;
-use frame_support::parameter_types;
+use frame_support::{parameter_types, traits::ConstU32};
 use frame_system as system;
 use pallet_balances as balances;
+use pallet_rmrk_core as rmrk;
 use pallet_uniques as uniques;
 use sp_core::H256;
 use sp_runtime::{
@@ -24,6 +25,7 @@ frame_support::construct_runtime!(
 		System: frame_system::{Pallet, Call, Config, Storage, Event<T>},
 		Balances: balances::{Pallet, Call, Config<T>, Storage, Event<T>},
 		Uniques: uniques::{Pallet, Call, Storage, Event<T>},
+		RmrkCore: rmrk::{Pallet, Call, Storage, Event<T>},
 		AsylumCore: asylum_core::{Pallet, Call, Storage, Event<T>},
 	}
 );
@@ -57,6 +59,7 @@ impl system::Config for Test {
 	type SystemWeightInfo = ();
 	type SS58Prefix = SS58Prefix;
 	type OnSetCode = ();
+	type MaxConsumers = ConstU32<32>;
 }
 
 parameter_types! {
@@ -105,15 +108,19 @@ impl pallet_uniques::Config for Test {
 }
 
 parameter_types! {
-	pub const NameLimit: u32 = 32;
+	pub const MaxRecursions: u32 = 10;
+}
+
+impl pallet_rmrk_core::Config for Test {
+	type Event = Event;
+	type ProtocolOrigin = frame_system::EnsureRoot<AccountId>;
+	type MaxRecursions = MaxRecursions;
 }
 
 impl asylum_core::Config for Test {
 	type Event = Event;
 	type ItemNFT = Uniques;
-	type MetadataLimit = ValueLimit;
-	type KeyLimit = KeyLimit;
-	type NameLimit = NameLimit;
+	type ItemRMRKCore = RmrkCore;
 }
 
 pub const ALICE: AccountId = 1u64;

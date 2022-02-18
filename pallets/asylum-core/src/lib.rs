@@ -16,7 +16,7 @@ pub mod pallet {
 	use asylum_traits::{
 		primitives::{InterpretationId, InterpretationTypeId, ItemId, ItemTemplateId, ProposalId},
 		Change, IntepretationInfo, IntepretationTypeInfo, Interpretable, Interpretation, Item,
-		ItemInfo, ItemTemplate, ItemTemplateInfo, NameOrId, Proposal, ProposalInfo,
+		ItemTemplate, Proposal, ProposalInfo,
 	};
 	use frame_support::{
 		pallet_prelude::*,
@@ -24,14 +24,15 @@ pub mod pallet {
 		transactional,
 	};
 	use frame_system::{ensure_signed, pallet_prelude::OriginFor};
+	use rmrk_traits::*;
 	use sp_std::vec::Vec;
 
-	pub type MetadataLimitOf<T> = BoundedVec<u8, <T as Config>::MetadataLimit>;
-	pub type KeyLimitOf<T> = BoundedVec<u8, <T as Config>::KeyLimit>;
-	pub type NameLimitOf<T> = BoundedVec<u8, <T as Config>::NameLimit>;
+	pub type StringLimitOf<T> = BoundedVec<u8, <T as pallet_uniques::Config>::StringLimit>;
+	pub type KeyLimitOf<T> = BoundedVec<u8, <T as pallet_uniques::Config>::KeyLimit>;
+	pub type ValueLimitOf<T> = BoundedVec<u8, <T as pallet_uniques::Config>::ValueLimit>;
 
 	#[pallet::config]
-	pub trait Config: frame_system::Config {
+	pub trait Config: frame_system::Config + pallet_uniques::Config {
 		type Event: From<Event<Self>> + IsType<<Self as frame_system::Config>::Event>;
 
 		type ItemNFT: Inspect<Self::AccountId, ClassId = ItemTemplateId, InstanceId = ItemId>
@@ -40,14 +41,11 @@ pub mod pallet {
 			+ Mutate<Self::AccountId>
 			+ Transfer<Self::AccountId>;
 
-		#[pallet::constant]
-		type MetadataLimit: Get<u32>;
-
-		#[pallet::constant]
-		type KeyLimit: Get<u32>;
-
-		#[pallet::constant]
-		type NameLimit: Get<u32>;
+		// pallet_rmrk_core
+		type ItemRMRKCore: Collection<StringLimitOf<Self>, Self::AccountId>
+			+ Nft<Self::AccountId, StringLimitOf<Self>>
+			+ Resource<StringLimitOf<Self>, Self::AccountId>
+			+ Property<KeyLimitOf<Self>, ValueLimitOf<Self>, Self::AccountId>;
 	}
 
 	#[pallet::pallet]
@@ -71,34 +69,10 @@ pub mod pallet {
 	pub(super) type NextProposalId<T: Config> = StorageValue<_, ProposalId, ValueQuery>;
 
 	#[pallet::storage]
-	#[pallet::getter(fn properties)]
-	pub(super) type Properties<T: Config> = StorageDoubleMap<
-		_,
-		Twox64Concat,
-		ItemId,
-		Twox64Concat,
-		KeyLimitOf<T>,
-		MetadataLimitOf<T>,
-		OptionQuery,
-	>;
-
-	#[pallet::storage]
 	#[pallet::getter(fn interpretation_type_id)]
 	/// Human-readable names of interpretation types
 	pub(super) type IntepretationTypeNames<T: Config> =
-		StorageMap<_, Blake2_128Concat, NameLimitOf<T>, InterpretationTypeId, OptionQuery>; //genesis config
-
-	#[pallet::storage]
-	#[pallet::getter(fn interpretation_id)]
-	/// Human-readable names of interpretations
-	pub(super) type IntepretationNames<T: Config> =
-		StorageMap<_, Blake2_128Concat, NameLimitOf<T>, InterpretationId, OptionQuery>;
-
-	#[pallet::storage]
-	#[pallet::getter(fn template_id)]
-	/// Human-readable names of templates
-	pub(super) type TemplateNames<T: Config> =
-		StorageMap<_, Blake2_128Concat, NameLimitOf<T>, ItemTemplateId, OptionQuery>;
+		StorageMap<_, Blake2_128Concat, StringLimitOf<T>, InterpretationTypeId, OptionQuery>; //genesis config
 
 	#[pallet::storage]
 	#[pallet::getter(fn interpretation_type_info)]
@@ -107,29 +81,20 @@ pub mod pallet {
 		_,
 		Twox64Concat,
 		InterpretationTypeId,
-		IntepretationTypeInfo<MetadataLimitOf<T>>,
+		IntepretationTypeInfo<StringLimitOf<T>>,
 		OptionQuery,
 	>;
 
 	#[pallet::storage]
 	#[pallet::getter(fn interpretation_info)]
 	/// Interpretation's infos
-	pub(super) type Intepretations<T: Config> = StorageMap<
+	pub(super) type Intepretations<T: Config> = StorageDoubleMap<
 		_,
+		Twox64Concat,
+		InterpretationTypeId,
 		Twox64Concat,
 		InterpretationId,
-		IntepretationInfo<MetadataLimitOf<T>>,
-		OptionQuery,
-	>;
-
-	#[pallet::storage]
-	#[pallet::getter(fn template_info)]
-	/// Template's infos
-	pub(super) type Templates<T: Config> = StorageMap<
-		_,
-		Twox64Concat,
-		ItemTemplateId,
-		ItemTemplateInfo<T::AccountId, MetadataLimitOf<T>>,
+		IntepretationInfo<StringLimitOf<T>>,
 		OptionQuery,
 	>;
 
@@ -140,7 +105,7 @@ pub mod pallet {
 		_,
 		(
 			NMapKey<Twox64Concat, ItemTemplateId>,
-			NMapKey<Twox64Concat, Option<ItemId>>,
+			NMapKey<Twox64Concat, ItemId>,
 			NMapKey<Twox64Concat, InterpretationTypeId>,
 		),
 		Vec<InterpretationId>,
@@ -161,18 +126,6 @@ pub mod pallet {
 	>;
 
 	#[pallet::storage]
-	#[pallet::getter(fn item_info)]
-	/// Item's infos
-	pub(super) type Items<T: Config> = StorageDoubleMap<
-		_,
-		Twox64Concat,
-		ItemTemplateId,
-		Twox64Concat,
-		ItemId,
-		ItemInfo<MetadataLimitOf<T>>,
-	>;
-
-	#[pallet::storage]
 	#[pallet::getter(fn proposal_info)]
 	/// Proposal's infos
 	pub(super) type Proposals<T: Config> =
@@ -180,29 +133,21 @@ pub mod pallet {
 
 	#[pallet::genesis_config]
 	pub struct GenesisConfig<T: Config> {
-		pub interpretation_types: Vec<(String, String)>,
-		pub interpretations: Vec<(String, String, String)>,
+		pub interpretations: Vec<(String, String, Vec<(String, String, String)>)>,
 		_marker: PhantomData<T>,
 	}
 
 	#[cfg(feature = "std")]
 	impl<T: Config> GenesisConfig<T> {
-		pub fn new(
-			interpretation_types: Vec<(String, String)>,
-			interpretations: Vec<(String, String, String)>,
-		) -> Self {
-			Self { interpretation_types, interpretations, _marker: Default::default() }
+		pub fn new(interpretations: Vec<(String, String, Vec<(String, String, String)>)>) -> Self {
+			Self { interpretations, _marker: Default::default() }
 		}
 	}
 
 	#[cfg(feature = "std")]
 	impl<T: Config> Default for GenesisConfig<T> {
 		fn default() -> Self {
-			Self {
-				interpretation_types: Default::default(),
-				interpretations: Default::default(),
-				_marker: Default::default(),
-			}
+			Self { interpretations: Default::default(), _marker: Default::default() }
 		}
 	}
 
@@ -217,23 +162,21 @@ pub mod pallet {
 			}
 
 			let mut i = 0;
-			for (type_name, metadata) in &self.interpretation_types {
+			let mut j = 0;
+			for (type_name, metadata, interpretations) in &self.interpretations {
+				IntepretationTypeNames::<T>::insert(bounded(type_name), i);
 				let metadata = bounded(metadata);
-				let type_name = bounded(type_name);
-				let type_info = IntepretationTypeInfo { metadata };
-				IntepretationTypeNames::<T>::insert(type_name, i);
-				IntepretationTypes::<T>::insert(i, type_info);
-				i += 1;
-			}
+				let info = IntepretationTypeInfo { metadata };
+				IntepretationTypes::<T>::insert(i, info);
 
-			i = 0;
-			for (interpretation_name, src, metadata) in &self.interpretations {
-				let metadata = bounded(metadata);
-				let src = bounded(src);
-				let interpretation_name = bounded(interpretation_name);
-				let info = IntepretationInfo { src, metadata };
-				IntepretationNames::<T>::insert(interpretation_name, i);
-				Intepretations::<T>::insert(i, info);
+				for (name, src, metadata) in interpretations {
+					let metadata = bounded(&metadata);
+					let src = bounded(&src);
+					let name = bounded(&name);
+					let info = IntepretationInfo { name, src, metadata };
+					Intepretations::<T>::insert(i, j, info);
+					j += 1;
+				}
 				i += 1;
 			}
 		}
@@ -243,26 +186,25 @@ pub mod pallet {
 	#[pallet::generate_deposit(pub(super) fn deposit_event)]
 	pub enum Event<T: Config> {
 		InterpretationTypeCreated {
-			type_name: NameLimitOf<T>,
+			type_name: StringLimitOf<T>,
 			type_id: InterpretationTypeId,
 		},
 		InterpretationCreated {
-			interpretation_name: NameLimitOf<T>,
+			interpretation_name: StringLimitOf<T>,
 			intepretation_id: InterpretationId,
 		},
 		TemplateCreated {
-			template_name: NameLimitOf<T>,
+			template_name: StringLimitOf<T>,
 			template_id: ItemTemplateId,
 		},
 		TemplateUpdated {
-			template_name: NameLimitOf<T>,
+			template_id: ItemTemplateId,
 		},
 		TemplateIssuerChanged {
 			template_id: ItemTemplateId,
 			new_issuer: T::AccountId,
 		},
 		TemplateDestroyed {
-			template_name: NameLimitOf<T>,
 			template_id: ItemTemplateId,
 		},
 		ItemMinted {
@@ -315,7 +257,10 @@ pub mod pallet {
 	}
 
 	#[pallet::call]
-	impl<T: Config> Pallet<T> {
+	impl<T: Config> Pallet<T>
+	where
+		T: pallet_uniques::Config<ClassId = ItemTemplateId, InstanceId = ItemId>,
+	{
 		/// Create new interpretation type.
 		///
 		/// Origin must be Signed.
@@ -329,8 +274,8 @@ pub mod pallet {
 		#[transactional]
 		pub fn create_interpretation_type(
 			origin: OriginFor<T>,
-			type_name: NameLimitOf<T>,
-			metadata: MetadataLimitOf<T>,
+			type_name: StringLimitOf<T>,
+			metadata: StringLimitOf<T>,
 		) -> DispatchResult {
 			ensure_signed(origin)?;
 			let type_id = Self::interpretation_type_create(&type_name, metadata)?;
@@ -352,13 +297,18 @@ pub mod pallet {
 		#[transactional]
 		pub fn create_interpretation(
 			origin: OriginFor<T>,
-			interpretation_name: NameLimitOf<T>,
-			src: MetadataLimitOf<T>,
-			metadata: MetadataLimitOf<T>,
+			type_name: StringLimitOf<T>,
+			interpretation_name: StringLimitOf<T>,
+			src: StringLimitOf<T>,
+			metadata: StringLimitOf<T>,
 		) -> DispatchResult {
 			ensure_signed(origin)?;
-			let intepretation_id =
-				Self::interpretation_create(&interpretation_name, src, metadata)?;
+			let intepretation_id = Self::interpretation_create(
+				&type_name,
+				interpretation_name.clone(),
+				src,
+				metadata,
+			)?;
 			Self::deposit_event(Event::InterpretationCreated {
 				interpretation_name,
 				intepretation_id,
@@ -382,15 +332,20 @@ pub mod pallet {
 		#[transactional]
 		pub fn create_template(
 			origin: OriginFor<T>,
-			owner: T::AccountId,
-			template_name: NameLimitOf<T>,
-			metadata: MetadataLimitOf<T>,
-			interpretations: Vec<Interpretation<NameLimitOf<T>>>,
+			template_name: StringLimitOf<T>,
+			metadata: StringLimitOf<T>,
+			capacity: u32,
+			interpretations: Vec<Interpretation<StringLimitOf<T>>>,
 		) -> DispatchResult {
-			ensure_signed(origin)?;
-			let template_id =
-				Self::template_create(owner.clone(), &template_name, metadata, interpretations)?;
-			T::ItemNFT::create_class(&template_id, &owner, &owner)?;
+			let sender = ensure_signed(origin)?;
+			let template_id = T::ItemRMRKCore::collection_create(
+				sender.clone(),
+				metadata,
+				capacity,
+				template_name.clone(),
+			)?;
+			Self::template_create(template_id, interpretations)?;
+			T::ItemNFT::create_class(&template_id, &sender, &sender)?;
 			Self::deposit_event(Event::TemplateCreated { template_name, template_id });
 			Ok(())
 		}
@@ -407,13 +362,14 @@ pub mod pallet {
 		#[transactional]
 		pub fn destroy_template(
 			origin: OriginFor<T>,
-			template_name: NameLimitOf<T>,
+			template_id: ItemTemplateId,
 		) -> DispatchResult {
-			ensure_signed(origin)?;
-			let template_id = Self::template_destroy(&template_name)?;
+			let sender = ensure_signed(origin)?;
+			let template_id = Self::template_destroy(template_id)?;
+			T::ItemRMRKCore::collection_burn(sender, template_id)?;
 			let witness = T::ItemNFT::get_destroy_witness(&template_id).unwrap();
 			T::ItemNFT::destroy(template_id, witness, T::ItemNFT::class_owner(&template_id))?;
-			Self::deposit_event(Event::TemplateDestroyed { template_name, template_id });
+			Self::deposit_event(Event::TemplateDestroyed { template_id });
 			Ok(())
 		}
 
@@ -429,34 +385,12 @@ pub mod pallet {
 		#[transactional]
 		pub fn update_template(
 			origin: OriginFor<T>,
-			template_name: NameLimitOf<T>,
+			template_id: ItemTemplateId,
 			proposal_id: ProposalId,
 		) -> DispatchResult {
 			ensure_signed(origin)?;
-			Self::template_update(proposal_id, NameOrId::Name(template_name.clone()))?;
-			Self::deposit_event(Event::TemplateUpdated { template_name });
-			Ok(())
-		}
-
-		/// Change template issuer. In Asylum context Template is extended Collection of NFTs.
-		///
-		/// Origin must be Signed and sender should be owner of the template.
-		///
-		/// - `template_name`: The template, which issuer is changing.
-		/// - `new_issuer`: New issuer of the template.
-		///
-		/// Emits `TemplateIssuerChanged`.
-		///
-		#[pallet::weight(10_000)]
-		#[transactional]
-		pub fn change_template_issuer(
-			origin: OriginFor<T>,
-			template_name: NameLimitOf<T>,
-			new_issuer: T::AccountId,
-		) -> DispatchResult {
-			ensure_signed(origin)?;
-			Self::template_change_issuer(NameOrId::Name(template_name.clone()), new_issuer)?;
-			Self::deposit_event(Event::TemplateUpdated { template_name });
+			Self::template_update(proposal_id, template_id)?;
+			Self::deposit_event(Event::TemplateUpdated { template_id });
 			Ok(())
 		}
 
@@ -472,19 +406,23 @@ pub mod pallet {
 		///
 		#[pallet::weight(10_000)]
 		#[transactional]
-		pub fn mint_item(
+		pub fn mint_item_from_template(
 			origin: OriginFor<T>,
+			owner: T::AccountId,
 			recipient: T::AccountId,
-			template_name_or_id: NameOrId<NameLimitOf<T>, ItemTemplateId>,
-			metadata: Option<BoundedVec<u8, T::MetadataLimit>>,
+			template_id: ItemTemplateId,
+			metadata: StringLimitOf<T>,
 		) -> DispatchResult {
 			let sender = ensure_signed(origin)?;
-			let template_id = Self::get_template_id(template_name_or_id)?;
-			ensure!(
-				T::ItemNFT::class_owner(&template_id) == Some(sender),
-				Error::<T>::NoPermission
-			);
-			let (_, item_id) = Self::item_mint(NameOrId::Id(template_id), metadata)?;
+			let (_, item_id) = T::ItemRMRKCore::nft_mint(
+				sender,
+				owner,
+				template_id,
+				Some(recipient.clone()),
+				None,
+				metadata,
+			)?;
+			Self::item_mint_from_template(template_id, item_id)?;
 			T::ItemNFT::mint_into(&template_id, &item_id, &recipient)?;
 			Self::deposit_event(Event::ItemMinted { template_id, item_id, recipient });
 			Ok(())
@@ -503,16 +441,12 @@ pub mod pallet {
 		#[transactional]
 		pub fn burn_item(
 			origin: OriginFor<T>,
-			template_name_or_id: NameOrId<NameLimitOf<T>, ItemTemplateId>,
+			template_id: ItemTemplateId,
 			item_id: ItemId,
 		) -> DispatchResult {
-			let sender = ensure_signed(origin)?;
-			let template_id = Self::get_template_id(template_name_or_id)?;
-			ensure!(
-				T::ItemNFT::class_owner(&template_id) == Some(sender),
-				Error::<T>::NoPermission
-			);
-			let (_, item_id) = Self::item_burn(NameOrId::Id(template_id), item_id)?;
+			ensure_signed(origin)?;
+			Self::item_burn(template_id, item_id)?;
+			T::ItemRMRKCore::nft_burn(template_id, item_id, 10)?;
 			T::ItemNFT::burn_from(&template_id, &item_id)?;
 			Self::deposit_event(Event::ItemBurned { template_id, item_id });
 			Ok(())
@@ -536,17 +470,14 @@ pub mod pallet {
 		#[transactional]
 		pub fn transfer_item(
 			origin: OriginFor<T>,
-			template_name_or_id: NameOrId<NameLimitOf<T>, ItemTemplateId>,
+			template_id: ItemTemplateId,
 			item_id: ItemId,
-			destination: T::AccountId,
+			destination: AccountIdOrCollectionNftTuple<T::AccountId>,
 		) -> DispatchResult {
 			let sender = ensure_signed(origin)?;
-			let template_id = Self::get_template_id(template_name_or_id)?;
-			ensure!(
-				T::ItemNFT::owner(&template_id, &item_id) == Some(sender),
-				Error::<T>::NoPermission
-			);
-			Self::item_transfer(&destination, NameOrId::Id(template_id), item_id)?;
+			let destination = T::ItemRMRKCore::nft_send(sender, template_id, item_id, destination)?;
+			T::ItemNFT::transfer(&template_id, &item_id, &destination)?;
+			// TODO: Uniques tranfer
 			Self::deposit_event(Event::ItemTransfered { template_id, item_id, destination });
 			Ok(())
 		}
@@ -565,67 +496,16 @@ pub mod pallet {
 		#[transactional]
 		pub fn update_item(
 			origin: OriginFor<T>,
-			template_name_or_id: NameOrId<NameLimitOf<T>, ItemTemplateId>,
+			template_id: ItemTemplateId,
 			item_id: ItemId,
 		) -> DispatchResult {
 			let sender = ensure_signed(origin)?;
-			let template_id = Self::get_template_id(template_name_or_id)?;
 			ensure!(
 				T::ItemNFT::owner(&template_id, &item_id) == Some(sender),
 				Error::<T>::NoPermission
 			);
-			Self::item_update(NameOrId::Id(template_id), item_id)?;
+			Self::item_update(template_id, item_id)?;
 			Self::deposit_event(Event::ItemUpdated { template_id, item_id });
-			Ok(())
-		}
-
-		/// Set an property for an item.
-		///
-		/// Origin must be signed by both `property_owner` and owner of item.
-		///
-		/// - `property_owner`: The owner of the property.
-		/// - `template_name_or_id`: The template of the item whose metadata to set.
-		/// - `item_id`: The identifier of the item whose metadata to set.
-		/// - `key`: The value to which to set the attribute.
-		/// - `metadata`: The value to which to set the attribute.
-		///
-		/// Emits `PropertySet`.
-		///
-		#[pallet::weight(10_000)]
-		#[transactional]
-		pub fn set_item_property(
-			origin: OriginFor<T>,
-			property_owner: T::AccountId,
-			template_name_or_id: NameOrId<NameLimitOf<T>, ItemTemplateId>,
-			item_id: ItemId,
-			key: BoundedVec<u8, T::KeyLimit>,
-			metadata: BoundedVec<u8, T::MetadataLimit>,
-		) -> DispatchResult {
-			ensure_signed(origin)?;
-			Ok(())
-		}
-
-		/// Clear an property for an item.
-		///
-		/// Origin must be signed by both `property_owner` and owner of item.
-		///
-		/// - `property_owner`: The owner of the property.
-		/// - `template_name_or_id`: The template of the item whose metadata to clear.
-		/// - `item_id`: The identifier of the item whose metadata to clear.
-		/// - `key`: The value to which to clear the attribute.
-		///
-		/// Emits `PropertyCleared`.
-		///
-		#[pallet::weight(10_000)]
-		#[transactional]
-		pub fn clear_item_property(
-			origin: OriginFor<T>,
-			property_owner: T::AccountId,
-			template_name_or_id: NameOrId<NameLimitOf<T>, ItemTemplateId>,
-			item_id: ItemId,
-			key: BoundedVec<u8, T::KeyLimit>,
-		) -> DispatchResult {
-			ensure_signed(origin)?;
 			Ok(())
 		}
 
@@ -642,11 +522,11 @@ pub mod pallet {
 		pub fn submit_template_change_proposal(
 			origin: OriginFor<T>,
 			author: T::AccountId,
-			template_name_or_id: NameOrId<NameLimitOf<T>, ItemTemplateId>,
+			template_id: ItemTemplateId,
 			change_set: Vec<Change>,
 		) -> DispatchResult {
 			ensure_signed(origin)?;
-			let proposal_id = Self::submit_proposal(author, template_name_or_id, change_set)?;
+			let proposal_id = Self::submit_proposal(author, template_id, change_set)?;
 			Self::deposit_event(Event::ProposalSubmitted { proposal_id });
 			Ok(())
 		}
