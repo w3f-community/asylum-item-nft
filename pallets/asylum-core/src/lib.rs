@@ -35,12 +35,6 @@ pub mod pallet {
 	pub trait Config: frame_system::Config + pallet_uniques::Config {
 		type Event: From<Event<Self>> + IsType<<Self as frame_system::Config>::Event>;
 
-		type ItemNFT: Inspect<Self::AccountId, ClassId = ItemTemplateId, InstanceId = ItemId>
-			+ Create<Self::AccountId>
-			+ Destroy<Self::AccountId>
-			+ Mutate<Self::AccountId>
-			+ Transfer<Self::AccountId>;
-
 		// pallet_rmrk_core
 		type ItemRMRKCore: Collection<StringLimitOf<Self>, Self::AccountId>
 			+ Nft<Self::AccountId, StringLimitOf<Self>>
@@ -345,7 +339,15 @@ pub mod pallet {
 				template_name.clone(),
 			)?;
 			Self::template_create(template_id, interpretations)?;
-			T::ItemNFT::create_class(&template_id, &sender, &sender)?;
+			pallet_uniques::Pallet::<T>::do_create_class(
+				template_id,
+				sender.clone(),
+				sender.clone(),
+				T::ClassDeposit::get(),
+				false,
+				pallet_uniques::Event::Created{ class: template_id, creator: sender.clone(), owner: sender.clone() },
+			)?;
+
 			Self::deposit_event(Event::TemplateCreated { template_name, template_id });
 			Ok(())
 		}
@@ -366,9 +368,14 @@ pub mod pallet {
 		) -> DispatchResult {
 			let sender = ensure_signed(origin)?;
 			let template_id = Self::template_destroy(template_id)?;
-			T::ItemRMRKCore::collection_burn(sender, template_id)?;
-			let witness = T::ItemNFT::get_destroy_witness(&template_id).unwrap();
-			T::ItemNFT::destroy(template_id, witness, T::ItemNFT::class_owner(&template_id))?;
+			T::ItemRMRKCore::collection_burn(sender.clone(), template_id)?;
+			let witness = pallet_uniques::Pallet::<T>::get_destroy_witness(&template_id).unwrap();
+			pallet_uniques::Pallet::<T>::do_destroy_class(
+				template_id,
+				witness,
+				sender.clone().into(),
+			)?;
+
 			Self::deposit_event(Event::TemplateDestroyed { template_id });
 			Ok(())
 		}
@@ -415,7 +422,7 @@ pub mod pallet {
 		) -> DispatchResult {
 			let sender = ensure_signed(origin)?;
 			let (_, item_id) = T::ItemRMRKCore::nft_mint(
-				sender,
+				sender.clone(),
 				owner,
 				template_id,
 				Some(recipient.clone()),
@@ -423,7 +430,12 @@ pub mod pallet {
 				metadata,
 			)?;
 			Self::item_mint_from_template(template_id, item_id)?;
-			T::ItemNFT::mint_into(&template_id, &item_id, &recipient)?;
+			pallet_uniques::Pallet::<T>::do_mint(
+				template_id,
+				item_id,
+				sender.clone(),
+				|_details| Ok(()),
+			)?;
 			Self::deposit_event(Event::ItemMinted { template_id, item_id, recipient });
 			Ok(())
 		}
@@ -447,7 +459,7 @@ pub mod pallet {
 			ensure_signed(origin)?;
 			Self::item_burn(template_id, item_id)?;
 			T::ItemRMRKCore::nft_burn(template_id, item_id, 10)?;
-			T::ItemNFT::burn_from(&template_id, &item_id)?;
+			pallet_uniques::Pallet::<T>::do_burn(template_id, item_id, |_, _| Ok(()))?;
 			Self::deposit_event(Event::ItemBurned { template_id, item_id });
 			Ok(())
 		}
@@ -476,8 +488,13 @@ pub mod pallet {
 		) -> DispatchResult {
 			let sender = ensure_signed(origin)?;
 			let destination = T::ItemRMRKCore::nft_send(sender, template_id, item_id, destination)?;
-			T::ItemNFT::transfer(&template_id, &item_id, &destination)?;
-			// TODO: Uniques tranfer
+			pallet_uniques::Pallet::<T>::do_transfer(
+				template_id,
+				item_id,
+				destination.clone(),
+				|_class_details, _details|
+					Ok(())
+			)?;
 			Self::deposit_event(Event::ItemTransfered { template_id, item_id, destination });
 			Ok(())
 		}
@@ -501,7 +518,7 @@ pub mod pallet {
 		) -> DispatchResult {
 			let sender = ensure_signed(origin)?;
 			ensure!(
-				T::ItemNFT::owner(&template_id, &item_id) == Some(sender),
+				pallet_uniques::Pallet::<T>::owner(template_id, item_id) == Some(sender),
 				Error::<T>::NoPermission
 			);
 			Self::item_update(template_id, item_id)?;
