@@ -100,7 +100,12 @@ where
 		for Interpretation { type_name, interpretation_ids } in interpretations {
 			let type_id = IntepretationTypeNames::<T>::get(type_name)
 				.ok_or(Error::<T>::InterpretationTypeNotExist)?;
-			// maybe check for interpretation existance
+			ensure!(
+				interpretation_ids
+					.iter()
+					.all(|id| Intepretations::<T>::contains_key(type_id, id)),
+				Error::<T>::InterpretationNotExist
+			);
 			TemplateIntepretations::<T>::insert(template_id, type_id, interpretation_ids);
 		}
 		Ok(template_id)

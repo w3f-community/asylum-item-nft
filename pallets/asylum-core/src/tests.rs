@@ -213,7 +213,7 @@ fn should_fail_create_template_2() {
 				}]
 			),
 			Error::<Test>::InterpretationNotExist
-		); // <---- TODO: add this check
+		);
 	});
 }
 
