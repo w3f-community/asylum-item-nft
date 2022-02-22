@@ -119,7 +119,6 @@ impl pallet_rmrk_core::Config for Test {
 
 impl asylum_core::Config for Test {
 	type Event = Event;
-	type ItemNFT = Uniques;
 	type ItemRMRKCore = RmrkCore;
 }
 
