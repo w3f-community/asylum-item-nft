@@ -1,10 +1,9 @@
 use crate::{mock::*, Error};
 use asylum_traits::{Change, IntepretationInfo, IntepretationTypeInfo, Interpretation};
 use frame_support::{assert_noop, assert_ok, traits::Get, BoundedVec};
-use frame_support::{
-	traits::tokens::nonfungibles::{Create, Destroy, Inspect, Mutate, Transfer},
-};
-use rmrk_traits::{AccountIdOrCollectionNftTuple, NftInfo};
+use frame_support::traits::tokens::nonfungibles::Inspect;
+use rmrk_traits::AccountIdOrCollectionNftTuple;
+
 fn bounded<T>(string: &str) -> BoundedVec<u8, T>
 where
 	T: Get<u32>,
@@ -81,6 +80,16 @@ fn create_interpretations() {
 		bounded(INTERPRETATION_ANIME),
 		metadata.clone(),
 		metadata.clone()
+	));
+}
+
+fn mint_item_from_template() {
+	assert_ok!(AsylumCore::mint_item_from_template(
+		Origin::signed(ALICE),
+		ALICE,
+		ALICE,
+		0,
+		bounded(MOCK_HASH)
 	));
 }
 
@@ -332,18 +341,13 @@ fn should_transfer_item() {
 			Origin::signed(ALICE),
 			bounded("MyTemplate"),
 			bounded(MOCK_HASH),
-			2,
+			3,
 			vec![Interpretation { type_name, interpretation_ids: vec![0, 1] }]
 		));
-		assert_ok!(AsylumCore::mint_item_from_template(
-			Origin::signed(ALICE),
-			ALICE,
-			ALICE,
-			0,
-			bounded(MOCK_HASH)
-		));
-		assert_eq!(RmrkCore::nfts(0, 0).unwrap().owner, AccountIdOrCollectionNftTuple::AccountId(ALICE));
-		assert_eq!(Uniques::owner(0, 0), Some(ALICE));
+
+		for _ in 0..3 {
+			mint_item_from_template();
+		}
 
 		assert_ok!(AsylumCore::transfer_item(
 			Origin::signed(ALICE),
@@ -363,30 +367,43 @@ fn should_transfer_item() {
 		assert_eq!(RmrkCore::nfts(0, 0).unwrap().owner, AccountIdOrCollectionNftTuple::AccountId(ALICE));
 		assert_eq!(Uniques::owner(0, 0), Some(ALICE));
 
-		assert_ok!(AsylumCore::mint_item_from_template(
+		assert_ok!(AsylumCore::transfer_item(
 			Origin::signed(ALICE),
-			ALICE,
-			ALICE,
 			0,
-			bounded(MOCK_HASH)
+			0,
+			AccountIdOrCollectionNftTuple::AccountId(BOB)
 		));
-
+		
 		assert_ok!(AsylumCore::transfer_item(
 			Origin::signed(ALICE),
 			0,
 			1,
-			AccountIdOrCollectionNftTuple::AccountId(BOB)
+			AccountIdOrCollectionNftTuple::CollectionAndNftTuple(0, 0)
 		));
+		assert_eq!(RmrkCore::pending_nfts(0, 1).unwrap().owner, AccountIdOrCollectionNftTuple::CollectionAndNftTuple(0, 0));
+		assert_ok!(RmrkCore::accept_nft(
+			Origin::signed(BOB),
+			0,
+			1,
+			AccountIdOrCollectionNftTuple::CollectionAndNftTuple(0, 0)
+		));
+		assert_eq!(RmrkCore::children((0, 0)), vec![(0, 1)]);
+
 		assert_ok!(AsylumCore::transfer_item(
 			Origin::signed(ALICE),
 			0,
-			0,
+			2,
 			AccountIdOrCollectionNftTuple::CollectionAndNftTuple(0, 1)
 		));
-		// TODO: Add NFT accept
-		//assert_eq!(RmrkCore::children((0, 1)), vec![(0, 0)]);
-		assert_eq!(RmrkCore::nfts(0, 0).unwrap().owner, AccountIdOrCollectionNftTuple::CollectionAndNftTuple(0, 1));
-		assert_eq!(Uniques::owner(0, 0).unwrap(), RmrkCore::nft_to_account_id::<u64>(0, 0)); // RMRK virtual adress
+		assert_ok!(RmrkCore::accept_nft(
+			Origin::signed(BOB),
+			0,
+			2,
+			AccountIdOrCollectionNftTuple::CollectionAndNftTuple(0, 1)
+		));
+		assert_eq!(RmrkCore::children((0, 1)), vec![(0, 2)]);
+		assert_eq!(RmrkCore::nfts(0, 2).unwrap().owner, AccountIdOrCollectionNftTuple::CollectionAndNftTuple(0, 1));
+		assert_eq!(Uniques::owner(0, 2).unwrap(), RmrkCore::nft_to_account_id(0, 1)); // RMRK virtual adress
 
 		assert_ok!(AsylumCore::transfer_item(
 			Origin::signed(BOB),
@@ -394,6 +411,8 @@ fn should_transfer_item() {
 			1,
 			AccountIdOrCollectionNftTuple::AccountId(ALICE)
 		));
+		assert_eq!(RmrkCore::nfts(0, 2).unwrap().owner, AccountIdOrCollectionNftTuple::CollectionAndNftTuple(0, 1));
+		assert_eq!(Uniques::owner(0, 2).unwrap(), RmrkCore::nft_to_account_id(0, 1));
 		assert_eq!(RmrkCore::nfts(0, 1).unwrap().owner, AccountIdOrCollectionNftTuple::AccountId(ALICE));
 		assert_eq!(Uniques::owner(0, 1), Some(ALICE));
 	});
@@ -411,20 +430,9 @@ fn should_fail_transfer_item() {
 			2,
 			vec![Interpretation { type_name, interpretation_ids: vec![0, 1] }]
 		));
-		assert_ok!(AsylumCore::mint_item_from_template(
-			Origin::signed(ALICE),
-			ALICE,
-			ALICE,
-			0,
-			bounded(MOCK_HASH)
-		));
-		assert_ok!(AsylumCore::mint_item_from_template(
-			Origin::signed(ALICE),
-			ALICE,
-			ALICE,
-			0,
-			bounded(MOCK_HASH)
-		));
+		for _ in 0..2 {
+			mint_item_from_template();
+		}
 
 		assert_noop!(AsylumCore::transfer_item(
 			Origin::signed(ALICE),
@@ -450,17 +458,81 @@ fn should_fail_transfer_item() {
 		assert_ok!(AsylumCore::transfer_item(
 			Origin::signed(ALICE),
 			0,
-			1,
+			0,
 			AccountIdOrCollectionNftTuple::AccountId(BOB)
 		));
 		assert_ok!(AsylumCore::transfer_item(
 			Origin::signed(ALICE),
 			0,
+			1,
+			AccountIdOrCollectionNftTuple::CollectionAndNftTuple(0, 0)
+		));
+		assert_ok!(RmrkCore::accept_nft(
+			Origin::signed(BOB),
+			0,
+			1,
+			AccountIdOrCollectionNftTuple::CollectionAndNftTuple(0, 0)
+		));
+		assert_noop!(AsylumCore::transfer_item(
+			Origin::signed(BOB),
+			0,
 			0,
 			AccountIdOrCollectionNftTuple::CollectionAndNftTuple(0, 1)
-		));
+		), pallet_rmrk_core::Error::<Test>::CannotSendToDescendentOrSelf);
+	});
+}
 
-		// TODO: Cover SendToDescendant case
+#[test]
+fn should_burn_item() {
+	ExtBuilder::default().build().execute_with(|| {
+		create_interpretations();
+		let type_name = bounded(INTERPRETATION_TYPE_2D);
+		assert_ok!(AsylumCore::create_template(
+			Origin::signed(ALICE),
+			bounded("MyTemplate"),
+			bounded(MOCK_HASH),
+			2,
+			vec![Interpretation { type_name, interpretation_ids: vec![0, 1] }]
+		));
+		mint_item_from_template();
+		assert_ok!(AsylumCore::burn_item(
+			Origin::signed(ALICE),
+			0,
+			0
+		));
+		assert_eq!(AsylumCore::item_interpretations((0, 0, 0)), None);
+		assert_eq!(RmrkCore::nfts(0, 1), None);
+	});
+}
+
+#[test]
+fn should_fail_burn_item_1() {
+	ExtBuilder::default().build().execute_with(|| {
+		create_interpretations();
+		let type_name = bounded(INTERPRETATION_TYPE_2D);
+		assert_ok!(AsylumCore::create_template(
+			Origin::signed(ALICE),
+			bounded("MyTemplate"),
+			bounded(MOCK_HASH),
+			2,
+			vec![Interpretation { type_name, interpretation_ids: vec![0, 1] }]
+		));
+		assert_noop!(AsylumCore::burn_item(
+			Origin::signed(ALICE),
+			0,
+			0
+		), pallet_uniques::Error::<Test>::Unknown);
+	});
+}
+
+#[test]
+fn should_fail_burn_item_2() {
+	ExtBuilder::default().build().execute_with(|| {
+		assert_noop!(AsylumCore::burn_item(
+			Origin::signed(ALICE),
+			0,
+			0
+		), pallet_rmrk_core::Error::<Test>::CollectionUnknown);
 	});
 }
 

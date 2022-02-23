@@ -20,7 +20,7 @@ pub mod pallet {
 	};
 	use frame_support::{
 		pallet_prelude::*,
-		traits::tokens::nonfungibles::{Create, Destroy, Inspect, Mutate, Transfer},
+		traits::tokens::nonfungibles::Destroy,
 		transactional,
 	};
 	use frame_system::{ensure_signed, pallet_prelude::OriginFor};
@@ -487,7 +487,7 @@ pub mod pallet {
 			destination: AccountIdOrCollectionNftTuple<T::AccountId>,
 		) -> DispatchResult {
 			let sender = ensure_signed(origin)?;
-			let destination = T::ItemRMRKCore::nft_send(sender, template_id, item_id, destination)?;
+			let (destination, _) = T::ItemRMRKCore::nft_send(sender, template_id, item_id, destination)?;
 			pallet_uniques::Pallet::<T>::do_transfer(
 				template_id,
 				item_id,

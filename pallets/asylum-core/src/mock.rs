@@ -7,12 +7,12 @@ use pallet_uniques as uniques;
 use sp_core::H256;
 use sp_runtime::{
 	testing::Header,
-	traits::{BlakeTwo256, IdentityLookup},
+	traits::{BlakeTwo256, IdentityLookup}, AccountId32,
 };
 
 type UncheckedExtrinsic = frame_system::mocking::MockUncheckedExtrinsic<Test>;
 type Block = frame_system::mocking::MockBlock<Test>;
-type AccountId = u64;
+type AccountId = AccountId32;
 type Balance = u128;
 
 // Configure a mock runtime to test the pallet.
@@ -122,9 +122,9 @@ impl asylum_core::Config for Test {
 	type ItemRMRKCore = RmrkCore;
 }
 
-pub const ALICE: AccountId = 1u64;
-pub const BOB: AccountId = 2u64;
-pub const CHARLIE: AccountId = 3u64;
+pub const ALICE: AccountId = AccountId::new([1u8; 32]);
+pub const BOB: AccountId = AccountId::new([2u8; 32]);
+pub const CHARLIE: AccountId = AccountId::new([3u8; 32]);
 
 pub struct ExtBuilder;
 impl Default for ExtBuilder {
