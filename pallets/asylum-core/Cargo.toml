@@ -25,14 +25,7 @@ version = '0.0.1'
 default-features = false
 git = 'https://github.com/rmrk-team/rmrk-substrate.git'
 package = 'pallet-rmrk-core'
-version = '4.0.0-dev'
-
-[dependencies.pallet-rmrk-equip]
-default-features = false
-git = 'https://github.com/rmrk-team/rmrk-substrate.git'
-branch = 'equip-pallet-brandon-wip'
-package = 'pallet-rmrk-equip'
-version = '4.0.0-dev'
+version = '0.0.1'
 
 [dependencies.codec]
 default-features = false
@@ -43,20 +36,20 @@ version = '2.0.0'
 [dependencies.frame-benchmarking]
 default-features = false
 git = 'https://github.com/paritytech/substrate.git'
+branch = "polkadot-v0.9.17"
 optional = true
-tag = 'monthly-2022-01'
 version = '4.0.0-dev'
 
 [dependencies.frame-support]
 default-features = false
 git = 'https://github.com/paritytech/substrate.git'
-tag = 'monthly-2022-01'
+branch = "polkadot-v0.9.17"
 version = '4.0.0-dev'
 
 [dependencies.frame-system]
 default-features = false
 git = 'https://github.com/paritytech/substrate.git'
-tag = 'monthly-2022-01'
+branch = "polkadot-v0.9.17"
 version = '4.0.0-dev'
 
 [dependencies.scale-info]
@@ -67,37 +60,37 @@ version = '1.0'
 [dependencies.sp-std]
 default-features = false
 git = 'https://github.com/paritytech/substrate.git'
-tag = 'monthly-2022-01'
+branch = "polkadot-v0.9.17"
 version = '4.0.0'
 
 [dependencies.sp-runtime]
 default-features = false
 git = 'https://github.com/paritytech/substrate.git'
-tag = 'monthly-2022-01'
-version = '4.0.0'
+branch = "polkadot-v0.9.17"
+version = '5.0.0'
 
 [dev-dependencies.sp-core]
 default-features = false
 git = 'https://github.com/paritytech/substrate.git'
-tag = 'monthly-2022-01'
-version = '4.1.0-dev'
+branch = "polkadot-v0.9.17"
+version = '5.0.0'
 
 [dev-dependencies.sp-io]
 default-features = false
 git = 'https://github.com/paritytech/substrate.git'
-tag = 'monthly-2022-01'
-version = '4.0.0-dev'
+branch = "polkadot-v0.9.17"
+version = '5.0.0'
 
 [dev-dependencies.pallet-balances]
 default-features = false
 git = 'https://github.com/paritytech/substrate.git'
-tag = 'monthly-2022-01'
+branch = "polkadot-v0.9.17"
 version = '4.0.0-dev'
 
 [dependencies.pallet-uniques]
 default-features = false
 git = 'https://github.com/paritytech/substrate.git'
-tag = 'monthly-2022-01'
+branch = "polkadot-v0.9.17"
 version = '4.0.0-dev'
 
 [features]
