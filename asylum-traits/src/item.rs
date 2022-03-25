@@ -6,6 +6,7 @@ use crate::primitives::{ItemId, ItemTemplateId};
 pub trait Item<AccountId, BoundedName, BoundedString> {
 	/// Regular Item(NFT) mint
 	fn item_mint_from_template(
+		sender: AccountId,
 		template_id: ItemTemplateId,
 		item_id: ItemId,
 	) -> Result<(ItemTemplateId, ItemId), DispatchError>; // ensure(template.issuer = sender)
@@ -22,8 +23,7 @@ pub trait Item<AccountId, BoundedName, BoundedString> {
 	///
 	/// * `template_name_or_id` - template name or template id
 	/// * `item_id` - id of the item to update
-	///
-	fn item_update(template_id: ItemTemplateId, item_id: ItemId) -> DispatchResult; // ensure(item.owner = sender)
+	fn item_update(sender: AccountId, template_id: ItemTemplateId, item_id: ItemId) -> DispatchResult; // ensure(item.owner = sender)
 }
 
 /// Trait for providing attributes support for Asylum Item

@@ -6,7 +6,7 @@ use sp_runtime::{DispatchError, DispatchResult};
 use sp_std::vec::Vec;
 
 /// Trait for providing Template(NFT collection) functionality for Asylum
-pub trait ItemTemplate<AccountId, BoundedString> {
+pub trait ItemTemplate<AccountId, BoundedString, BoundedInterpretation> {
 	///	Create new item's Template
 	///
 	/// # Arguments
@@ -20,7 +20,7 @@ pub trait ItemTemplate<AccountId, BoundedString> {
 	/// Ok(id) of newly create template
 	fn template_create(
 		template_id: ItemTemplateId,
-		interpretations: Vec<Interpretation<BoundedString>>,
+		interpretations: Vec<Interpretation<BoundedString, BoundedInterpretation, BoundedString>>,
 	) -> Result<ItemTemplateId, DispatchError>;
 
 	///	Update item's Template according to approved proposal
@@ -29,7 +29,6 @@ pub trait ItemTemplate<AccountId, BoundedString> {
 	///
 	/// * `proposal_id` - Template's update proposal id
 	/// * `template_name_or_id` - Template's id or name
-	///
 	fn template_update(proposal_id: ProposalId, template_id: ItemTemplateId) -> DispatchResult;
 
 	///	Destroy empty template
