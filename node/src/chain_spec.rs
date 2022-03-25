@@ -68,6 +68,8 @@ pub fn development_config() -> Result<ChainSpec, String> {
 		None,
 		// Protocol ID
 		None,
+		// Fork ID
+		None,
 		// Properties
 		None,
 		// Extensions
@@ -115,6 +117,8 @@ pub fn local_testnet_config() -> Result<ChainSpec, String> {
 		None,
 		// Protocol ID
 		None,
+		// Fork ID
+		None,
 		// Properties
 		None,
 		// Extensions
@@ -153,23 +157,6 @@ fn testnet_genesis(
 		asylum: AsylumConfig::new(vec![(
 			"type_2D".to_string(),
 			"ipfs://type_2D_metadata_hash".to_string(),
-			vec![
-				(
-					"2D_pixel".to_string(),
-					"ipfs://2D_pixel_src_hash".to_string(),
-					"ipfs://2D_pixel_metadata_hash".to_string(),
-				),
-				(
-					"2D_comics".to_string(),
-					"ipfs://2D_comics_src_hash".to_string(),
-					"ipfs://2D_comics_metadata_hash".to_string(),
-				),
-				(
-					"2D_anime".to_string(),
-					"ipfs://2D_anime_src_hash".to_string(),
-					"ipfs://2D_anime_metadata_hash".to_string(),
-				),
-			],
 		)]),
 	}
 }
