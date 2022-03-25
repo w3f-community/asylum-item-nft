@@ -165,6 +165,7 @@ version = "0.0.1"
 dependencies = [
  "frame-support",
  "parity-scale-codec",
+ "rmrk-traits",
  "scale-info",
  "serde",
  "sp-runtime",
@@ -3603,6 +3604,7 @@ dependencies = [
 name = "node-asylum"
 version = "4.0.0-dev"
 dependencies = [
+ "clap 3.1.6",
  "frame-benchmarking",
  "frame-benchmarking-cli",
  "jsonrpc-core",
@@ -3950,7 +3952,7 @@ dependencies = [
 [[package]]
 name = "pallet-rmrk-core"
 version = "0.0.1"
-source = "git+https://github.com/rmrk-team/rmrk-substrate.git#ffbfcb95f034dba4953d1b7d0776c555b1e7e424"
+source = "git+https://github.com/SupremaLex/rmrk-substrate.git?branch=feat/resource_removal#2d99359599263eaa7a0e8c927b908afc1d4bc26b"
 dependencies = [
  "frame-benchmarking",
  "frame-support",
@@ -4874,7 +4876,7 @@ dependencies = [
 [[package]]
 name = "rmrk-traits"
 version = "0.0.1"
-source = "git+https://github.com/rmrk-team/rmrk-substrate.git#ffbfcb95f034dba4953d1b7d0776c555b1e7e424"
+source = "git+https://github.com/SupremaLex/rmrk-substrate.git?branch=feat/resource_removal#2d99359599263eaa7a0e8c927b908afc1d4bc26b"
 dependencies = [
  "frame-benchmarking",
  "frame-support",

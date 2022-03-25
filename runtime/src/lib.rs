@@ -304,18 +304,20 @@ impl pallet_uniques::Config for Runtime {
 
 parameter_types! {
 	pub const MaxRecursions: u32 = 10;
+	pub const ResourceSymbolLimit: u32 = 10;
+	pub const CollectionSymbolLimit: u32 = 100;
 }
 
 impl pallet_rmrk_core::Config for Runtime {
 	type Event = Event;
 	type ProtocolOrigin = frame_system::EnsureRoot<AccountId>;
 	type MaxRecursions = MaxRecursions;
+	type ResourceSymbolLimit = ResourceSymbolLimit;
+	type CollectionSymbolLimit = CollectionSymbolLimit;
 }
 
 impl asylum_core::Config for Runtime {
 	type Event = Event;
-	type ItemNFT = Uniques;
-	type ItemRMRKCore = RmrkCore;
 }
 
 // Create the runtime by composing the FRAME pallets that were previously configured.
@@ -336,7 +338,7 @@ construct_runtime!(
 		// Include the custom logic from the pallet-template in the runtime.
 		Uniques: pallet_uniques,
 		RmrkCore: pallet_rmrk_core,
-		Asylum: asylum_core,
+		Asylum: asylum_core
 	}
 );
 
