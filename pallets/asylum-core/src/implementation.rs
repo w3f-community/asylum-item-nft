@@ -1,18 +1,19 @@
-use std::collections::BTreeSet;
-
-use asylum_traits::primitives::{
-	InterpretationId, InterpretationTypeId, ItemId, ItemTemplateId, ProposalId,
+use asylum_traits::{
+	primitives::{InterpretationTypeId, ItemId, ItemTemplateId, ProposalId},
+	*,
 };
-use asylum_traits::*;
 use frame_support::ensure;
+use pallet_rmrk_core::StringLimitOf;
+use rmrk_traits::{Resource, ResourceInfo};
 use sp_runtime::{DispatchError, DispatchResult};
-use sp_std::vec::Vec;
+use sp_std::{collections::btree_set::BTreeSet, vec::Vec};
 
 use super::*;
 
 impl<T: Config> Interpretable<StringLimitOf<T>> for Pallet<T>
 where
-	T: pallet_uniques::Config<ClassId = ItemTemplateId, InstanceId = ItemId>,
+	T: pallet_uniques::Config<ClassId = ItemTemplateId, InstanceId = ItemId>
+		+ pallet_rmrk_core::Config,
 {
 	fn interpretation_type_create(
 		type_name: &StringLimitOf<T>,
@@ -28,32 +29,37 @@ where
 		IntepretationTypes::<T>::insert(type_id, type_info);
 		Ok(type_id)
 	}
-
-	fn interpretation_create(
-		type_name: &StringLimitOf<T>,
-		interpretation_name: StringLimitOf<T>,
-		src: StringLimitOf<T>,
-		metadata: StringLimitOf<T>,
-	) -> Result<InterpretationId, DispatchError> {
-		let type_id = Self::interpretation_type_id(type_name)
-			.ok_or(Error::<T>::InterpretationTypeNotExist)?;
-		let id = Self::get_next_interpretation_id()?;
-		let info = IntepretationInfo { name: interpretation_name, src, metadata };
-		Intepretations::<T>::insert(type_id, id, info);
-		Ok(id)
-	}
 }
 
 impl<T: Config> Item<T::AccountId, StringLimitOf<T>, StringLimitOf<T>> for Pallet<T>
 where
-	T: pallet_uniques::Config<ClassId = ItemTemplateId, InstanceId = ItemId>,
+	T: pallet_uniques::Config<ClassId = ItemTemplateId, InstanceId = ItemId>
+		+ pallet_rmrk_core::Config,
 {
 	fn item_mint_from_template(
+		sender: T::AccountId,
 		template_id: ItemTemplateId,
 		item_id: ItemId,
 	) -> Result<(ItemTemplateId, ItemId), DispatchError> {
-		for (type_id, interpretation_id) in TemplateIntepretations::<T>::iter_prefix(template_id) {
-			ItemIntepretations::<T>::insert((template_id, item_id, type_id), interpretation_id);
+		for (
+			(type_id, _),
+			ResourceInfo { id, pending: _, parts, base, src, metadata, slot, license, thumb },
+		) in TemplateIntepretations::<T>::iter_prefix((template_id,))
+		{
+			pallet_rmrk_core::Pallet::<T>::resource_add(
+				sender.clone(),
+				template_id,
+				item_id,
+				id.clone(),
+				base,
+				src,
+				metadata,
+				slot,
+				license,
+				thumb,
+				parts,
+			)?;
+			ItemIntepretations::<T>::insert((template_id, item_id, type_id, &id), ());
 		}
 		Ok((template_id, item_id))
 	}
@@ -66,47 +72,74 @@ where
 		Ok((template_id, item_id))
 	}
 
-	fn item_update(template_id: ItemTemplateId, item_id: ItemId) -> DispatchResult {
+	fn item_update(
+		sender: T::AccountId,
+		template_id: ItemTemplateId,
+		item_id: ItemId,
+	) -> DispatchResult {
+		ensure!(
+			pallet_uniques::Pallet::<T>::owner(template_id, item_id) == Some(sender.clone()),
+			Error::<T>::NoPermission
+		);
+
 		let current_item_state: BTreeSet<_> =
 			ItemIntepretations::<T>::iter_key_prefix((template_id, item_id)).collect();
 		let current_template_state: BTreeSet<_> =
-			TemplateIntepretations::<T>::iter_key_prefix(template_id).collect();
+			TemplateIntepretations::<T>::iter_key_prefix((template_id,)).collect();
 		let types_to_remove = current_item_state.difference(&current_template_state);
-		for interpretation_type in types_to_remove {
-			ItemIntepretations::<T>::remove((template_id, item_id, interpretation_type));
-		}
-		for interpretation_type in current_template_state {
-			ItemIntepretations::<T>::try_mutate(
-				(template_id, item_id, interpretation_type),
-				|interpretations| -> DispatchResult {
-					*interpretations =
-						TemplateIntepretations::<T>::get(template_id, interpretation_type);
-					Ok(())
-				},
+		for (type_id, interpretation_id) in types_to_remove {
+			ItemIntepretations::<T>::remove((template_id, item_id, type_id, interpretation_id));
+			pallet_rmrk_core::Pallet::<T>::resource_remove(
+				sender.clone(),
+				template_id,
+				item_id,
+				interpretation_id.clone(),
 			)?;
+		}
+		for (type_id, interpretation_id) in current_template_state {
+			let ResourceInfo { id, pending: _, parts, base, src, metadata, slot, license, thumb } =
+				TemplateIntepretations::<T>::get((template_id, type_id, interpretation_id.clone()))
+					.unwrap();
+			pallet_rmrk_core::Pallet::<T>::resource_add(
+				sender.clone(),
+				template_id,
+				item_id,
+				id.clone(),
+				base,
+				src,
+				metadata,
+				slot,
+				license,
+				thumb,
+				parts,
+			)?;
+			ItemIntepretations::<T>::insert((template_id, item_id, type_id, interpretation_id), ());
 		}
 		Ok(())
 	}
 }
 
-impl<T: Config> ItemTemplate<T::AccountId, StringLimitOf<T>> for Pallet<T>
+impl<T: Config> ItemTemplate<T::AccountId, StringLimitOf<T>, BoundedInterpretation<T>> for Pallet<T>
 where
-	T: pallet_uniques::Config<ClassId = ItemTemplateId, InstanceId = ItemId>,
+	T: pallet_uniques::Config<ClassId = ItemTemplateId, InstanceId = ItemId>
+		+ pallet_rmrk_core::Config,
 {
 	fn template_create(
 		template_id: ItemTemplateId,
-		interpretations: Vec<Interpretation<StringLimitOf<T>>>,
+		interpretations: Vec<
+			Interpretation<StringLimitOf<T>, BoundedInterpretation<T>, StringLimitOf<T>>,
+		>,
 	) -> Result<ItemTemplateId, DispatchError> {
-		for Interpretation { type_name, interpretation_ids } in interpretations {
+		for Interpretation { type_name, interpretations } in interpretations {
 			let type_id = IntepretationTypeNames::<T>::get(type_name)
 				.ok_or(Error::<T>::InterpretationTypeNotExist)?;
-			ensure!(
-				interpretation_ids
-					.iter()
-					.all(|id| Intepretations::<T>::contains_key(type_id, id)),
-				Error::<T>::InterpretationNotExist
-			);
-			TemplateIntepretations::<T>::insert(template_id, type_id, interpretation_ids);
+
+			interpretations.into_iter().for_each(|interpretation| {
+				TemplateIntepretations::<T>::insert(
+					(template_id, type_id, interpretation.id.clone()),
+					interpretation,
+				);
+			});
 		}
 		Ok(template_id)
 	}
@@ -122,42 +155,34 @@ where
 
 		for change in proposal_info.change_set {
 			match change {
-				Change::Add { interpretation_type, interpretation_ids } => {
+				Change::AddOrUpdate { interpretation_type, interpretations } => {
+					interpretations.into_iter().for_each(|interpretation| {
+						TemplateIntepretations::<T>::insert(
+							(template_id, interpretation_type, interpretation.id.clone()),
+							interpretation,
+						);
+					});
+				},
+				Change::RemoveInterpretation { interpretation_type, interpretation_id } => {
 					ensure!(
-						!TemplateIntepretations::<T>::contains_key(
+						TemplateIntepretations::<T>::contains_key((
 							template_id,
-							interpretation_type
-						),
-						Error::<T>::TemplateAlreadySupportThisType
-					);
-					TemplateIntepretations::<T>::insert(
-						template_id,
-						interpretation_type,
-						interpretation_ids,
-					);
-				},
-				Change::Update { interpretation_type, interpretation_ids } => {
-					ensure!(
-						TemplateIntepretations::<T>::contains_key(template_id, interpretation_type),
+							interpretation_type,
+							&interpretation_id
+						)),
 						Error::<T>::TemplateNotSupportThisType
 					);
-					TemplateIntepretations::<T>::try_mutate(
+					TemplateIntepretations::<T>::remove((
 						template_id,
 						interpretation_type,
-						|interpretations| -> DispatchResult {
-							if let Some(interpretation) = interpretations {
-								*interpretation = interpretation_ids;
-							}
-							Ok(())
-						},
-					)?;
+						interpretation_id,
+					));
 				},
-				Change::Remove { interpretation_type } => {
-					ensure!(
-						TemplateIntepretations::<T>::contains_key(template_id, interpretation_type),
-						Error::<T>::TemplateNotSupportThisType
+				Change::RemoveInterpretationType { interpretation_type } => {
+					TemplateIntepretations::<T>::remove_prefix(
+						(template_id, interpretation_type),
+						None,
 					);
-					TemplateIntepretations::<T>::remove(template_id, interpretation_type);
 				},
 			}
 		}
@@ -165,19 +190,20 @@ where
 	}
 
 	fn template_destroy(template_id: ItemTemplateId) -> Result<ItemTemplateId, DispatchError> {
-		TemplateIntepretations::<T>::remove_prefix(template_id, None);
+		TemplateIntepretations::<T>::remove_prefix((template_id,), None);
 		Ok(template_id)
 	}
 }
 
-impl<T: Config> Proposal<T::AccountId> for Pallet<T>
+impl<T: Config> Proposal<T::AccountId, BoundedInterpretation<T>, StringLimitOf<T>> for Pallet<T>
 where
-	T: pallet_uniques::Config<ClassId = ItemTemplateId, InstanceId = ItemId>,
+	T: pallet_uniques::Config<ClassId = ItemTemplateId, InstanceId = ItemId>
+		+ pallet_rmrk_core::Config,
 {
 	fn submit_proposal(
 		author: T::AccountId,
 		template_id: ItemTemplateId,
-		change_set: Vec<Change>,
+		change_set: Vec<Change<BoundedInterpretation<T>, StringLimitOf<T>>>,
 	) -> Result<ProposalId, DispatchError> {
 		let proposal_id = Self::get_next_proposal_id()?;
 		let proposal_info =

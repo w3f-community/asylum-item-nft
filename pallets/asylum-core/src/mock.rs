@@ -7,7 +7,8 @@ use pallet_uniques as uniques;
 use sp_core::H256;
 use sp_runtime::{
 	testing::Header,
-	traits::{BlakeTwo256, IdentityLookup}, AccountId32,
+	traits::{BlakeTwo256, IdentityLookup},
+	AccountId32,
 };
 
 type UncheckedExtrinsic = frame_system::mocking::MockUncheckedExtrinsic<Test>;
@@ -109,17 +110,20 @@ impl pallet_uniques::Config for Test {
 
 parameter_types! {
 	pub const MaxRecursions: u32 = 10;
+	pub const ResourceSymbolLimit: u32 = 10;
+	pub const CollectionSymbolLimit: u32 = 100;
 }
 
 impl pallet_rmrk_core::Config for Test {
 	type Event = Event;
 	type ProtocolOrigin = frame_system::EnsureRoot<AccountId>;
 	type MaxRecursions = MaxRecursions;
+	type ResourceSymbolLimit = ResourceSymbolLimit;
+	type CollectionSymbolLimit = CollectionSymbolLimit;
 }
 
 impl asylum_core::Config for Test {
 	type Event = Event;
-	type ItemRMRKCore = RmrkCore;
 }
 
 pub const ALICE: AccountId = AccountId::new([1u8; 32]);
