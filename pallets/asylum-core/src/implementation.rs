@@ -2,7 +2,7 @@ use asylum_traits::{
 	primitives::{InterpretationTypeId, ItemId, ItemTemplateId, ProposalId},
 	*,
 };
-use frame_support::ensure;
+use frame_support::{ensure, traits::tokens::nonfungibles::Inspect};
 use pallet_rmrk_core::StringLimitOf;
 use rmrk_traits::{Resource, ResourceInfo};
 use sp_runtime::{DispatchError, DispatchResult};
@@ -144,9 +144,13 @@ where
 		Ok(template_id)
 	}
 
-	fn template_update(proposal_id: ProposalId, template_id: ItemTemplateId) -> DispatchResult {
+	fn template_update(sender: T::AccountId, proposal_id: ProposalId, template_id: ItemTemplateId) -> DispatchResult {
+		if let Some(collection_issuer) =
+				pallet_uniques::Pallet::<T>::class_owner(&template_id)
+			{
+				ensure!(collection_issuer == sender, Error::<T>::NoPermission);
+			}
 		let proposal_info = Proposals::<T>::get(proposal_id).ok_or(Error::<T>::ProposalNotExist)?;
-		// TODO: check owner
 		ensure!(proposal_info.state == ProposalState::Approved, Error::<T>::ProposalNotApproved);
 		ensure!(
 			proposal_info.template_id == template_id,
