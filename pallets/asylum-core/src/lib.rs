@@ -42,17 +42,8 @@ pub mod pallet {
 	pub struct Pallet<T>(_);
 
 	#[pallet::storage]
-	pub(super) type NextTemplateId<T: Config> = StorageValue<_, ItemTemplateId, ValueQuery>;
-
-	#[pallet::storage]
-	pub(super) type NextItemId<T: Config> = StorageValue<_, ItemId, ValueQuery>;
-
-	#[pallet::storage]
 	pub(super) type NextInterpretationTypeId<T: Config> =
 		StorageValue<_, InterpretationTypeId, ValueQuery>;
-
-	#[pallet::storage]
-	pub(super) type NextInterpretationId<T: Config> = StorageValue<_, InterpretationId, ValueQuery>;
 
 	#[pallet::storage]
 	pub(super) type NextProposalId<T: Config> = StorageValue<_, ProposalId, ValueQuery>;
@@ -349,8 +340,8 @@ pub mod pallet {
 			template_id: ItemTemplateId,
 			proposal_id: ProposalId,
 		) -> DispatchResult {
-			ensure_signed(origin)?;
-			Self::template_update(proposal_id, template_id)?;
+			let sender = ensure_signed(origin)?;
+			Self::template_update(sender, proposal_id, template_id)?;
 			Self::deposit_event(Event::TemplateUpdated { template_id });
 			Ok(())
 		}
