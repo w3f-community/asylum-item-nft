@@ -556,3 +556,24 @@ fn should_update_template_and_item() {
 		assert_eq!(RmrkCore::resources((0, 0, concat(TYPE_2D, PIXEL))), None);
 	});
 }
+
+#[test]
+fn should_fail_update_template() {
+	ExtBuilder::default().build().execute_with(|| {
+		create_template();
+		let update = Change::AddOrUpdate {
+			interpretation_type: 1,
+			interpretations: vec![resource(TYPE_3D, PIXEL, "updated_metadata")],
+		};
+		assert_ok!(AsylumCore::submit_template_change_proposal(
+			Origin::signed(ALICE),
+			ALICE,
+			0,
+			vec![update],
+		));
+		assert_noop!(
+			AsylumCore::update_template(Origin::signed(BOB), 0, 0),
+			Error::<Test>::NoPermission
+		);
+	});
+}

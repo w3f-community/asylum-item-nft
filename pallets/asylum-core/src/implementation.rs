@@ -144,12 +144,15 @@ where
 		Ok(template_id)
 	}
 
-	fn template_update(sender: T::AccountId, proposal_id: ProposalId, template_id: ItemTemplateId) -> DispatchResult {
-		if let Some(collection_issuer) =
-				pallet_uniques::Pallet::<T>::class_owner(&template_id)
-			{
-				ensure!(collection_issuer == sender, Error::<T>::NoPermission);
-			}
+	fn template_update(
+		sender: T::AccountId,
+		proposal_id: ProposalId,
+		template_id: ItemTemplateId,
+	) -> DispatchResult {
+		ensure!(
+			pallet_uniques::Pallet::<T>::class_owner(&template_id) == Some(sender),
+			Error::<T>::NoPermission
+		);
 		let proposal_info = Proposals::<T>::get(proposal_id).ok_or(Error::<T>::ProposalNotExist)?;
 		ensure!(proposal_info.state == ProposalState::Approved, Error::<T>::ProposalNotApproved);
 		ensure!(
