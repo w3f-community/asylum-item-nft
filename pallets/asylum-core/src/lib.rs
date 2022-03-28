@@ -254,11 +254,10 @@ pub mod pallet {
 		///
 		/// Origin must be Signed.
 		///
-		/// - `owner`: The owner of template.
-		/// - `template_name`: The template to be created.
-		/// - `interpretations`: vec of pairs of supported (interpretation_type_name,
-		///   interpretation_name).
-		/// - `metadata`: The link to the template description stored somewhere(for example ipfs).
+		/// - `template_name`: The RMRK Collection's symbol.
+		/// - `metadata`: The RMRK Collection's metadata.
+		/// - `max`: The RMRK Collection's max.
+		/// - `interpretations`: vec of pairs of Interpretations.
 		///
 		/// Emits `TemplateCreated`.
 		#[pallet::weight(10_000)]
@@ -302,7 +301,7 @@ pub mod pallet {
 		///
 		/// Origin must be Signed and sender should be owner of the template.
 		///
-		/// - `template_name`: The template to be destroyed.
+		/// - `template_id`: The template to be destroyed.
 		///
 		/// Emits `TemplateDestroyed`.
 		#[pallet::weight(10_000)]
@@ -330,7 +329,8 @@ pub mod pallet {
 		///
 		/// Origin must be Signed and sender should be owner of the template.
 		///
-		/// - `template_name`: The template to be destroyed.
+		/// - `template_id`: The template to be destroyed.
+		/// - `proposal_id`: The template update proposal id.
 		///
 		/// Emits `TemplateUpdated`.
 		#[pallet::weight(10_000)]
@@ -346,14 +346,15 @@ pub mod pallet {
 			Ok(())
 		}
 
-		/// Mint new item from 'template_name_or_id', i.e. mint Item(NFT) with
-		/// the same set of supported interpretations as 'template_name_or_id'
+		/// Mint new item from 'template_id', i.e. mint Item(NFT) with
+		/// the same set of supported interpretations as 'template_id'
 		/// has.
 		///
 		/// Origin must be Signed and sender must be Issuer of Template.
-		///
-		/// - `recipient`: The recipient of the item 'template_name_or_id' Template.
-		/// - `template_name_or_id`: The template name or id.
+		/// 
+		/// - `owner`: The owner of the minted item.
+		/// - `recipient`: The recipient of the item 'template_id' Template.
+		/// - `template_id`: The template name or id.
 		/// - `metadata`: The link to the item description stored somewhere(for example ipfs).
 		///
 		/// Emits `ItemMinted`.
@@ -390,9 +391,9 @@ pub mod pallet {
 		/// Destroy a single asset instance.
 		///
 		/// Origin must be Signed and the sender should be the Admin of the
-		/// asset `template_name_or_id`.
+		/// asset `template_id`.
 		///
-		/// - `template_name_or_id`: The template name or id
+		/// - `template_id`: The template name or id
 		/// - `item_id`: The item to be burned
 		///
 		/// Emits `ItemBurned`.
@@ -415,12 +416,12 @@ pub mod pallet {
 		/// Move an asset from the sender account to another.
 		///
 		/// Origin must be Signed and the signing account must be either:
-		/// - the Admin of the asset `template_name_or_id`;
+		/// - the Admin of the asset `template_id`;
 		/// - the Owner of the asset `item_id`;
 		/// - the approved delegate for the asset `item_id` (in this case, the approval is reset).
 		///
 		/// Arguments:
-		/// - `template_name_or_id`: The template of the item to be transferred.
+		/// - `template_id`: The template of the item to be transferred.
 		/// - `item_id`: The item to be transferred.
 		/// - `destination`: The account to receive ownership of the asset.
 		///
@@ -447,13 +448,13 @@ pub mod pallet {
 		}
 
 		/// Update 'item_id' item according to newest version of
-		/// 'template_name_or_id' template
+		/// 'template_id' template
 		///
 		/// Origin must be Signed and the sender must be owner of the 'item_id'
 		/// item
 		///
 		/// Arguments:
-		/// - `template_name_or_id`: The template of the item to be updated.
+		/// - `template_id`: The template of the item to be updated.
 		/// - `item_id`: The item to be updated.
 		///
 		/// Emits `ItemUpdated`.
@@ -470,12 +471,12 @@ pub mod pallet {
 			Ok(())
 		}
 
-		/// Submit proposal with `template_name_or_id` template change. Proposal
+		/// Submit proposal with `template_id` template change. Proposal
 		/// may Add/Update/Remove supported interpretations.
 		///
 		/// - `author`: The author of proposal
-		/// - `template_name_or_id`: The template to change
-		/// - `change_set`: Add/Update/Remove changes
+		/// - `template_id`: The template to change
+		/// - `change_set`: AddOrUpdate/RemoveInterpretation/RemoveInterpretationType changes
 		///
 		/// Emits `ProposalSubmitted`.
 		#[pallet::weight(10_000)]
