@@ -3,7 +3,6 @@ use asylum_traits::primitives::*;
 use super::*;
 
 impl<T: Config> Pallet<T> {
-
 	pub fn get_next_interpretation_type_id() -> Result<InterpretationTypeId, Error<T>> {
 		// NOTE: Should we have a more sophisticated item ID generation algorithm?
 		NextInterpretationTypeId::<T>::try_mutate(|id| {
