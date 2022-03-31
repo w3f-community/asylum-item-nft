@@ -3,6 +3,9 @@
 #[cfg(test)]
 pub mod mock;
 
+#[cfg(test)]
+mod tests;
+
 mod functions;
 mod impl_nonfungibles;
 mod types;
@@ -270,13 +273,10 @@ pub mod pallet {
 			#[pallet::compact] ticket: T::TicketId,
 			owner: <T::Lookup as StaticLookup>::Source,
 		) -> DispatchResult {
-			let origin = ensure_signed(origin)?;
+			let _origin = ensure_signed(origin)?;
 			let owner = T::Lookup::lookup(owner)?;
 
-			Self::do_mint(game, ticket, owner, |class_details| {
-				//ensure!(class_details.issuer == origin, Error::<T>::NoPermission);
-				Ok(())
-			})
+			Self::do_mint(game, ticket, owner, |_| Ok(()))
 		}
 
 		#[pallet::weight(10_000)]
@@ -444,6 +444,69 @@ pub mod pallet {
 				Self::deposit_event(Event::TeamChanged { game, issuer, admin, freezer });
 				Ok(())
 			})
+		}
+
+		#[pallet::weight(10_000)]
+		pub fn approve_transfer(
+			origin: OriginFor<T>,
+			#[pallet::compact] game: T::GameId,
+			#[pallet::compact] ticket: T::TicketId,
+			delegate: <T::Lookup as StaticLookup>::Source,
+		) -> DispatchResult {
+			let check = ensure_signed(origin)?;
+			let delegate = T::Lookup::lookup(delegate)?;
+
+			let game_details = Game::<T>::get(&game).ok_or(Error::<T>::Unknown)?;
+			let mut details =
+				Ticket::<T>::get(&game, &ticket).ok_or(Error::<T>::Unknown)?;
+
+			let permitted = &check == &game_details.admin || &check == &details.owner;
+			ensure!(permitted, Error::<T>::NoPermission);
+
+			details.approved = Some(delegate);
+			Ticket::<T>::insert(&game, &ticket, &details);
+
+			let delegate = details.approved.expect("set as Some above; qed");
+			Self::deposit_event(Event::ApprovedTransfer {
+				game,
+				ticket,
+				owner: details.owner,
+				delegate,
+			});
+
+			Ok(())
+		}
+
+		#[pallet::weight(10_000)]
+		pub fn cancel_approval(
+			origin: OriginFor<T>,
+			#[pallet::compact] game: T::GameId,
+			#[pallet::compact] ticket: T::TicketId,
+			maybe_check_delegate: Option<<T::Lookup as StaticLookup>::Source>,
+		) -> DispatchResult {
+			let check = ensure_signed(origin)?;
+			let game_details = Game::<T>::get(&game).ok_or(Error::<T>::Unknown)?;
+			let mut details =
+				Ticket::<T>::get(&game, &ticket).ok_or(Error::<T>::Unknown)?;
+
+			let permitted = &check == &game_details.admin || &check == &details.owner;
+			ensure!(permitted, Error::<T>::NoPermission);
+
+			let maybe_check_delegate = maybe_check_delegate.map(T::Lookup::lookup).transpose()?;
+			let old = details.approved.take().ok_or(Error::<T>::NoDelegate)?;
+			if let Some(check_delegate) = maybe_check_delegate {
+				ensure!(check_delegate == old, Error::<T>::WrongDelegate);
+			}
+
+			Ticket::<T>::insert(&game, &ticket, &details);
+			Self::deposit_event(Event::ApprovalCancelled {
+				game,
+				ticket,
+				owner: details.owner,
+				delegate: old,
+			});
+
+			Ok(())
 		}
 
 		#[pallet::weight(10_000)]

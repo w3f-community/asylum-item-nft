@@ -1,5 +1,5 @@
 use super::*;
-use crate as pallet_uniques;
+use crate as asylum_game_distribution;
 
 use frame_support::{
 	construct_runtime,
@@ -22,7 +22,7 @@ construct_runtime!(
 	{
 		System: frame_system::{Pallet, Call, Config, Storage, Event<T>},
 		Balances: pallet_balances::{Pallet, Call, Storage, Config<T>, Event<T>},
-		Uniques: pallet_uniques::{Pallet, Call, Storage, Event<T>},
+		GameDistribution: asylum_game_distribution::{Pallet, Call, Storage, Event<T>},
 	}
 );
 
