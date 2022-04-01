@@ -7,10 +7,7 @@ impl<T: Config> Pallet<T> {
 		game: T::GameId,
 		ticket: T::TicketId,
 		dest: T::AccountId,
-		with_details: impl FnOnce(
-			&GameDetailsFor::<T>,
-			&mut TicketDetailsFor<T>,
-		) -> DispatchResult,
+		with_details: impl FnOnce(&GameDetailsFor<T>, &mut TicketDetailsFor<T>) -> DispatchResult,
 	) -> DispatchResult {
 		let game_details = Game::<T>::get(&game).ok_or(Error::<T>::Unknown)?;
 		ensure!(!game_details.is_frozen, Error::<T>::Frozen);
@@ -34,10 +31,11 @@ impl<T: Config> Pallet<T> {
 		Ok(())
 	}
 
-	pub fn do_create_class(
+	pub fn do_create_game(
 		game: T::GameId,
 		owner: T::AccountId,
 		admin: T::AccountId,
+		price: BalanceOf<T>,
 		event: Event<T>,
 	) -> DispatchResult {
 		ensure!(!Game::<T>::contains_key(game), Error::<T>::InUse);
@@ -49,6 +47,7 @@ impl<T: Config> Pallet<T> {
 				issuer: admin.clone(),
 				admin: admin.clone(),
 				freezer: admin.clone(),
+				price,
 				instances: 0,
 				instance_metadatas: 0,
 				attributes: 0,
@@ -61,7 +60,7 @@ impl<T: Config> Pallet<T> {
 		Ok(())
 	}
 
-	pub fn do_destroy_class(
+	pub fn do_destroy_game(
 		game: T::GameId,
 		witness: DestroyWitness,
 		maybe_check_owner: Option<T::AccountId>,
@@ -96,16 +95,14 @@ impl<T: Config> Pallet<T> {
 		})
 	}
 
-	pub fn do_mint(
+	pub fn do_mint_ticket(
 		game: T::GameId,
 		ticket: T::TicketId,
 		owner: T::AccountId,
-		with_details: impl FnOnce(&GameDetailsFor::<T>) -> DispatchResult,
+		with_details: impl FnOnce(&GameDetailsFor<T>) -> DispatchResult,
 	) -> DispatchResult {
 		ensure!(!Ticket::<T>::contains_key(game, ticket), Error::<T>::AlreadyExists);
 
-		//TODO: minter should pay to game_owner
-		
 		Game::<T>::try_mutate(&game, |maybe_game_details| -> DispatchResult {
 			let game_details = maybe_game_details.as_mut().ok_or(Error::<T>::Unknown)?;
 
@@ -114,7 +111,6 @@ impl<T: Config> Pallet<T> {
 			let instances =
 				game_details.instances.checked_add(1).ok_or(ArithmeticError::Overflow)?;
 			game_details.instances = instances;
-
 
 			let owner = owner.clone();
 			Account::<T>::insert((&owner, &game, &ticket), ());
@@ -127,17 +123,16 @@ impl<T: Config> Pallet<T> {
 		Ok(())
 	}
 
-	pub fn do_burn(
+	pub fn do_burn_ticket(
 		game: T::GameId,
 		ticket: T::TicketId,
-		with_details: impl FnOnce(&GameDetailsFor::<T>, &TicketDetailsFor<T>) -> DispatchResult,
+		with_details: impl FnOnce(&GameDetailsFor<T>, &TicketDetailsFor<T>) -> DispatchResult,
 	) -> DispatchResult {
 		let owner = Game::<T>::try_mutate(
 			&game,
 			|maybe_class_details| -> Result<T::AccountId, DispatchError> {
 				let game_details = maybe_class_details.as_mut().ok_or(Error::<T>::Unknown)?;
-				let details =
-				Ticket::<T>::get(&game, &ticket).ok_or(Error::<T>::Unknown)?;
+				let details = Ticket::<T>::get(&game, &ticket).ok_or(Error::<T>::Unknown)?;
 				with_details(&game_details, &details)?;
 
 				game_details.instances.saturating_dec();

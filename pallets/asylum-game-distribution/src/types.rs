@@ -2,13 +2,11 @@ use super::*;
 use frame_support::{traits::Get, BoundedVec};
 use scale_info::TypeInfo;
 
-pub(super) type GameDetailsFor<T> =
-GameDetails<<T as SystemConfig>::AccountId>;
-pub(super) type TicketDetailsFor<T> =
-	TicketDetails<<T as SystemConfig>::AccountId>;
+pub(super) type GameDetailsFor<T> = GameDetails<<T as SystemConfig>::AccountId, BalanceOf<T>>;
+pub(super) type TicketDetailsFor<T> = TicketDetails<<T as SystemConfig>::AccountId>;
 
 #[derive(Clone, Encode, Decode, Eq, PartialEq, RuntimeDebug, TypeInfo)]
-pub struct GameDetails<AccountId> {
+pub struct GameDetails<AccountId, Balance> {
 	/// Can change `owner`, `issuer`, `freezer` and `admin` accounts.
 	pub(super) owner: AccountId,
 	/// Can mint tokens.
@@ -17,6 +15,8 @@ pub struct GameDetails<AccountId> {
 	pub(super) admin: AccountId,
 	/// Can freeze tokens.
 	pub(super) freezer: AccountId,
+	/// Game price
+	pub(super) price: Balance,
 	/// The total number of outstanding instances of this asset class.
 	pub(super) instances: u32,
 	/// The total number of outstanding instance metadata of this asset class.
@@ -41,7 +41,7 @@ pub struct DestroyWitness {
 	pub attributes: u32,
 }
 
-impl<AccountId> GameDetails<AccountId> {
+impl<AccountId, Balance> GameDetails<AccountId, Balance> {
 	pub fn destroy_witness(&self) -> DestroyWitness {
 		DestroyWitness {
 			instances: self.instances,

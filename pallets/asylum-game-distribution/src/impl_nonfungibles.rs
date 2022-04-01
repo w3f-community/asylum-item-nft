@@ -1,8 +1,5 @@
 use super::*;
-use frame_support::{
-	traits::tokens::nonfungibles::*,
-	BoundedSlice,
-};
+use frame_support::{traits::tokens::nonfungibles::*, BoundedSlice};
 use sp_runtime::{DispatchError, DispatchResult};
 use sp_std::prelude::*;
 
@@ -73,10 +70,11 @@ impl<T: Config> Create<<T as SystemConfig>::AccountId> for Pallet<T> {
 		who: &T::AccountId,
 		admin: &T::AccountId,
 	) -> DispatchResult {
-		Self::do_create_class(
+		Self::do_create_game(
 			class.clone(),
 			who.clone(),
 			admin.clone(),
+			Default::default(),
 			Event::GameCreated { game: class.clone(), creator: who.clone(), owner: admin.clone() },
 		)
 	}
@@ -94,7 +92,7 @@ impl<T: Config> Destroy<<T as SystemConfig>::AccountId> for Pallet<T> {
 		witness: Self::DestroyWitness,
 		maybe_check_owner: Option<T::AccountId>,
 	) -> Result<Self::DestroyWitness, DispatchError> {
-		Self::do_destroy_class(class, witness, maybe_check_owner)
+		Self::do_destroy_game(class, witness, maybe_check_owner)
 	}
 }
 
@@ -104,11 +102,11 @@ impl<T: Config> Mutate<<T as SystemConfig>::AccountId> for Pallet<T> {
 		instance: &Self::InstanceId,
 		who: &T::AccountId,
 	) -> DispatchResult {
-		Self::do_mint(class.clone(), instance.clone(), who.clone(), |_| Ok(()))
+		Self::do_mint_ticket(class.clone(), instance.clone(), who.clone(), |_| Ok(()))
 	}
 
 	fn burn_from(class: &Self::ClassId, instance: &Self::InstanceId) -> DispatchResult {
-		Self::do_burn(class.clone(), instance.clone(), |_, _| Ok(()))
+		Self::do_burn_ticket(class.clone(), instance.clone(), |_, _| Ok(()))
 	}
 }
 

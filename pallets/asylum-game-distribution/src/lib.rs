@@ -11,7 +11,7 @@ mod impl_nonfungibles;
 mod types;
 
 use codec::{Decode, Encode, HasCompact};
-use frame_support::traits::Currency;
+use frame_support::traits::{Currency, ExistenceRequirement};
 use frame_system::Config as SystemConfig;
 use sp_runtime::{
 	traits::{Saturating, StaticLookup},
@@ -33,6 +33,9 @@ pub mod pallet {
 	#[pallet::without_storage_info]
 	pub struct Pallet<T>(_);
 
+	pub type BalanceOf<T> =
+		<<T as Config>::Currency as Currency<<T as frame_system::Config>::AccountId>>::Balance;
+
 	#[pallet::config]
 	/// The module configuration trait.
 	pub trait Config: frame_system::Config {
@@ -46,7 +49,7 @@ pub mod pallet {
 		type TicketId: Member + Parameter + Default + Copy + HasCompact + From<u16>;
 
 		type Currency: Currency<Self::AccountId>;
-		
+
 		/// The maximum length of data stored on-chain.
 		#[pallet::constant]
 		type StringLimit: Get<u32>;
@@ -62,12 +65,8 @@ pub mod pallet {
 
 	#[pallet::storage]
 	/// Details of an asset class.
-	pub(super) type Game<T: Config> = StorageMap<
-		_,
-		Blake2_128Concat,
-		T::GameId,
-		GameDetails<T::AccountId>,
-	>;
+	pub(super) type Game<T: Config> =
+		StorageMap<_, Blake2_128Concat, T::GameId, GameDetails<T::AccountId, BalanceOf<T>>>;
 
 	#[pallet::storage]
 	/// The assets held by any given account; set out this way so that assets owned by a single
@@ -110,13 +109,8 @@ pub mod pallet {
 
 	#[pallet::storage]
 	/// Metadata of an asset class.
-	pub(super) type GameMetadataOf<T: Config> = StorageMap<
-		_,
-		Blake2_128Concat,
-		T::GameId,
-		GameMetadata<T::StringLimit>,
-		OptionQuery,
-	>;
+	pub(super) type GameMetadataOf<T: Config> =
+		StorageMap<_, Blake2_128Concat, T::GameId, GameMetadata<T::StringLimit>, OptionQuery>;
 
 	#[pallet::storage]
 	/// Metadata of an asset instance.
@@ -146,21 +140,48 @@ pub mod pallet {
 	#[pallet::event]
 	#[pallet::generate_deposit(pub(super) fn deposit_event)]
 	pub enum Event<T: Config> {
-		GameCreated { game: T::GameId, creator: T::AccountId, owner: T::AccountId },
-		GameDestroyed { game: T::GameId },
-		TicketIssued { game: T::GameId, ticket: T::TicketId, owner: T::AccountId },
+		GameCreated {
+			game: T::GameId,
+			creator: T::AccountId,
+			owner: T::AccountId,
+		},
+		GameDestroyed {
+			game: T::GameId,
+		},
+		TicketIssued {
+			game: T::GameId,
+			ticket: T::TicketId,
+			owner: T::AccountId,
+		},
 		TicketTransferred {
 			game: T::GameId,
 			ticket: T::TicketId,
 			from: T::AccountId,
 			to: T::AccountId,
 		},
-		TicketBurned { game: T::GameId, ticket: T::TicketId, owner: T::AccountId },
-		TicketFrozen { game: T::GameId, ticket: T::TicketId },
-		TicketThawed { game: T::GameId, ticket: T::TicketId },
-		GameFrozen { game: T::GameId },
-		GameThawed { game: T::GameId },
-		OwnerChanged { game: T::GameId, new_owner: T::AccountId },
+		TicketBurned {
+			game: T::GameId,
+			ticket: T::TicketId,
+			owner: T::AccountId,
+		},
+		TicketFrozen {
+			game: T::GameId,
+			ticket: T::TicketId,
+		},
+		TicketThawed {
+			game: T::GameId,
+			ticket: T::TicketId,
+		},
+		GameFrozen {
+			game: T::GameId,
+		},
+		GameThawed {
+			game: T::GameId,
+		},
+		OwnerChanged {
+			game: T::GameId,
+			new_owner: T::AccountId,
+		},
 		TeamChanged {
 			game: T::GameId,
 			issuer: T::AccountId,
@@ -184,14 +205,19 @@ pub mod pallet {
 			data: BoundedVec<u8, T::StringLimit>,
 			is_frozen: bool,
 		},
-		GameMetadataCleared { game: T::GameId },
+		GameMetadataCleared {
+			game: T::GameId,
+		},
 		MetadataSet {
 			game: T::GameId,
 			ticket: T::TicketId,
 			data: BoundedVec<u8, T::StringLimit>,
 			is_frozen: bool,
 		},
-		MetadataCleared { game: T::GameId, ticket: T::TicketId },
+		MetadataCleared {
+			game: T::GameId,
+			ticket: T::TicketId,
+		},
 		AttributeSet {
 			game: T::GameId,
 			maybe_ticket: Option<T::TicketId>,
@@ -243,14 +269,16 @@ pub mod pallet {
 			origin: OriginFor<T>,
 			#[pallet::compact] game: T::GameId,
 			admin: <T::Lookup as StaticLookup>::Source,
+			price: BalanceOf<T>,
 		) -> DispatchResult {
 			let owner = ensure_signed(origin)?;
 			let admin = T::Lookup::lookup(admin)?;
 
-			Self::do_create_class(
+			Self::do_create_game(
 				game,
 				owner.clone(),
 				admin.clone(),
+				price,
 				Event::GameCreated { game, creator: owner, owner: admin },
 			)
 		}
@@ -262,7 +290,7 @@ pub mod pallet {
 			witness: DestroyWitness,
 		) -> DispatchResult {
 			let check_owner = ensure_signed(origin)?;
-			let _details = Self::do_destroy_class(game, witness, Some(check_owner))?;
+			let _details = Self::do_destroy_game(game, witness, Some(check_owner))?;
 			Ok(())
 		}
 
@@ -273,10 +301,16 @@ pub mod pallet {
 			#[pallet::compact] ticket: T::TicketId,
 			owner: <T::Lookup as StaticLookup>::Source,
 		) -> DispatchResult {
-			let _origin = ensure_signed(origin)?;
+			let sender = ensure_signed(origin)?;
 			let owner = T::Lookup::lookup(owner)?;
-
-			Self::do_mint(game, ticket, owner, |_| Ok(()))
+			let game_details = Game::<T>::get(game).ok_or(Error::<T>::Unknown)?;
+			T::Currency::transfer(
+				&sender,
+				&game_details.owner,
+				game_details.price,
+				ExistenceRequirement::KeepAlive,
+			)?;
+			Self::do_mint_ticket(game, ticket, owner, |_| Ok(()))
 		}
 
 		#[pallet::weight(10_000)]
@@ -289,13 +323,10 @@ pub mod pallet {
 			let origin = ensure_signed(origin)?;
 			let check_owner = check_owner.map(T::Lookup::lookup).transpose()?;
 
-			Self::do_burn(game, ticket, |class_details, details| {
+			Self::do_burn_ticket(game, ticket, |class_details, details| {
 				let is_permitted = class_details.admin == origin || details.owner == origin;
 				ensure!(is_permitted, Error::<T>::NoPermission);
-				ensure!(
-					check_owner.map_or(true, |o| o == details.owner),
-					Error::<T>::WrongOwner
-				);
+				ensure!(check_owner.map_or(true, |o| o == details.owner), Error::<T>::WrongOwner);
 				Ok(())
 			})
 		}
@@ -327,8 +358,7 @@ pub mod pallet {
 		) -> DispatchResult {
 			let origin = ensure_signed(origin)?;
 
-			let mut details =
-				Ticket::<T>::get(&game, &ticket).ok_or(Error::<T>::Unknown)?;
+			let mut details = Ticket::<T>::get(&game, &ticket).ok_or(Error::<T>::Unknown)?;
 			let game_details = Game::<T>::get(&game).ok_or(Error::<T>::Unknown)?;
 			ensure!(game_details.freezer == origin, Error::<T>::NoPermission);
 
@@ -347,8 +377,7 @@ pub mod pallet {
 		) -> DispatchResult {
 			let origin = ensure_signed(origin)?;
 
-			let mut details =
-				Ticket::<T>::get(&game, &ticket).ok_or(Error::<T>::Unknown)?;
+			let mut details = Ticket::<T>::get(&game, &ticket).ok_or(Error::<T>::Unknown)?;
 			let game_details = Game::<T>::get(&game).ok_or(Error::<T>::Unknown)?;
 			ensure!(game_details.admin == origin, Error::<T>::NoPermission);
 
@@ -457,8 +486,7 @@ pub mod pallet {
 			let delegate = T::Lookup::lookup(delegate)?;
 
 			let game_details = Game::<T>::get(&game).ok_or(Error::<T>::Unknown)?;
-			let mut details =
-				Ticket::<T>::get(&game, &ticket).ok_or(Error::<T>::Unknown)?;
+			let mut details = Ticket::<T>::get(&game, &ticket).ok_or(Error::<T>::Unknown)?;
 
 			let permitted = &check == &game_details.admin || &check == &details.owner;
 			ensure!(permitted, Error::<T>::NoPermission);
@@ -486,8 +514,7 @@ pub mod pallet {
 		) -> DispatchResult {
 			let check = ensure_signed(origin)?;
 			let game_details = Game::<T>::get(&game).ok_or(Error::<T>::Unknown)?;
-			let mut details =
-				Ticket::<T>::get(&game, &ticket).ok_or(Error::<T>::Unknown)?;
+			let mut details = Ticket::<T>::get(&game, &ticket).ok_or(Error::<T>::Unknown)?;
 
 			let permitted = &check == &game_details.admin || &check == &details.owner;
 			ensure!(permitted, Error::<T>::NoPermission);
@@ -524,8 +551,7 @@ pub mod pallet {
 
 			let maybe_is_frozen = match maybe_ticket {
 				None => GameMetadataOf::<T>::get(game).map(|v| v.is_frozen),
-				Some(instance) =>
-					TicketMetadataOf::<T>::get(game, instance).map(|v| v.is_frozen),
+				Some(instance) => TicketMetadataOf::<T>::get(game, instance).map(|v| v.is_frozen),
 			};
 			ensure!(!maybe_is_frozen.unwrap_or(false), Error::<T>::Frozen);
 
@@ -554,8 +580,7 @@ pub mod pallet {
 
 			let maybe_is_frozen = match maybe_ticket {
 				None => GameMetadataOf::<T>::get(game).map(|v| v.is_frozen),
-				Some(instance) =>
-					TicketMetadataOf::<T>::get(game, instance).map(|v| v.is_frozen),
+				Some(instance) => TicketMetadataOf::<T>::get(game, instance).map(|v| v.is_frozen),
 			};
 			ensure!(!maybe_is_frozen.unwrap_or(false), Error::<T>::Frozen);
 
