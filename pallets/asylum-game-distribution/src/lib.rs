@@ -203,18 +203,16 @@ pub mod pallet {
 		GameMetadataSet {
 			game: T::GameId,
 			data: BoundedVec<u8, T::StringLimit>,
-			is_frozen: bool,
 		},
 		GameMetadataCleared {
 			game: T::GameId,
 		},
-		MetadataSet {
+		TicketMetadataSet {
 			game: T::GameId,
 			ticket: T::TicketId,
 			data: BoundedVec<u8, T::StringLimit>,
-			is_frozen: bool,
 		},
-		MetadataCleared {
+		TicketMetadataCleared {
 			game: T::GameId,
 			ticket: T::TicketId,
 		},
@@ -549,12 +547,6 @@ pub mod pallet {
 			let mut game_details = Game::<T>::get(&game).ok_or(Error::<T>::Unknown)?;
 			ensure!(check_owner == game_details.owner, Error::<T>::NoPermission);
 
-			let maybe_is_frozen = match maybe_ticket {
-				None => GameMetadataOf::<T>::get(game).map(|v| v.is_frozen),
-				Some(instance) => TicketMetadataOf::<T>::get(game, instance).map(|v| v.is_frozen),
-			};
-			ensure!(!maybe_is_frozen.unwrap_or(false), Error::<T>::Frozen);
-
 			let attribute = Attribute::<T>::get((game, maybe_ticket, &key));
 			if attribute.is_none() {
 				game_details.attributes.saturating_inc();
@@ -578,12 +570,6 @@ pub mod pallet {
 			let mut game_details = Game::<T>::get(&game).ok_or(Error::<T>::Unknown)?;
 			ensure!(check_owner == game_details.owner, Error::<T>::NoPermission);
 
-			let maybe_is_frozen = match maybe_ticket {
-				None => GameMetadataOf::<T>::get(game).map(|v| v.is_frozen),
-				Some(instance) => TicketMetadataOf::<T>::get(game, instance).map(|v| v.is_frozen),
-			};
-			ensure!(!maybe_is_frozen.unwrap_or(false), Error::<T>::Frozen);
-
 			if let Some(_) = Attribute::<T>::take((game, maybe_ticket, &key)) {
 				game_details.attributes.saturating_dec();
 				Game::<T>::insert(game, &game_details);
@@ -598,7 +584,6 @@ pub mod pallet {
 			#[pallet::compact] game: T::GameId,
 			#[pallet::compact] ticket: T::TicketId,
 			data: BoundedVec<u8, T::StringLimit>,
-			is_frozen: bool,
 		) -> DispatchResult {
 			let check_owner = ensure_signed(origin)?;
 
@@ -607,17 +592,15 @@ pub mod pallet {
 			ensure!(check_owner == game_details.owner, Error::<T>::NoPermission);
 
 			TicketMetadataOf::<T>::try_mutate_exists(game, ticket, |metadata| {
-				let was_frozen = metadata.as_ref().map_or(false, |m| m.is_frozen);
-				ensure!(!was_frozen, Error::<T>::Frozen);
 
 				if metadata.is_none() {
 					game_details.instance_metadatas.saturating_inc();
 				}
 
-				*metadata = Some(TicketMetadata { data: data.clone(), is_frozen });
+				*metadata = Some(TicketMetadata { data: data.clone() });
 
 				Game::<T>::insert(&game, &game_details);
-				Self::deposit_event(Event::MetadataSet { game, ticket, data, is_frozen });
+				Self::deposit_event(Event::TicketMetadataSet { game, ticket, data });
 				Ok(())
 			})
 		}
@@ -634,15 +617,13 @@ pub mod pallet {
 			ensure!(check_owner == game_details.owner, Error::<T>::NoPermission);
 
 			TicketMetadataOf::<T>::try_mutate_exists(game, ticket, |metadata| {
-				let was_frozen = metadata.as_ref().map_or(false, |m| m.is_frozen);
-				ensure!(!was_frozen, Error::<T>::Frozen);
 
 				if metadata.is_some() {
 					game_details.instance_metadatas.saturating_dec();
 				}
-
+				metadata.take();
 				Game::<T>::insert(&game, &game_details);
-				Self::deposit_event(Event::MetadataCleared { game, ticket });
+				Self::deposit_event(Event::TicketMetadataCleared { game, ticket });
 				Ok(())
 			})
 		}
@@ -652,7 +633,6 @@ pub mod pallet {
 			origin: OriginFor<T>,
 			#[pallet::compact] game: T::GameId,
 			data: BoundedVec<u8, T::StringLimit>,
-			is_frozen: bool,
 		) -> DispatchResult {
 			let check_owner = ensure_signed(origin)?;
 
@@ -660,14 +640,12 @@ pub mod pallet {
 			ensure!(check_owner == details.owner, Error::<T>::NoPermission);
 
 			GameMetadataOf::<T>::try_mutate_exists(game, |metadata| {
-				let was_frozen = metadata.as_ref().map_or(false, |m| m.is_frozen);
-				ensure!(!was_frozen, Error::<T>::Frozen);
 
 				Game::<T>::insert(&game, details);
 
-				*metadata = Some(GameMetadata { data: data.clone(), is_frozen });
+				*metadata = Some(GameMetadata { data: data.clone() });
 
-				Self::deposit_event(Event::GameMetadataSet { game, data, is_frozen });
+				Self::deposit_event(Event::GameMetadataSet { game, data });
 				Ok(())
 			})
 		}
@@ -683,9 +661,7 @@ pub mod pallet {
 			ensure!(check_owner == details.owner, Error::<T>::NoPermission);
 
 			GameMetadataOf::<T>::try_mutate_exists(game, |metadata| {
-				let was_frozen = metadata.as_ref().map_or(false, |m| m.is_frozen);
-				ensure!(!was_frozen, Error::<T>::Frozen);
-
+				metadata.take();
 				Self::deposit_event(Event::GameMetadataCleared { game });
 				Ok(())
 			})
