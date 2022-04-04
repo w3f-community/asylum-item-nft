@@ -87,7 +87,7 @@ fn lifecycle_should_work() {
 		Balances::make_free_balance_be(&1, 100);
 		assert_ok!(GameDistribution::create_game(Origin::signed(1), 0, 1, 1000));
 		assert_eq!(games(), vec![(1, 0)]);
-		assert_ok!(GameDistribution::set_game_metadata(Origin::signed(1), 0, bvec![0, 0], false));
+		assert_ok!(GameDistribution::set_game_metadata(Origin::signed(1), 0, bvec![0, 0]));
 		assert!(GameMetadataOf::<Test>::contains_key(0));
 
 		assert_ok!(GameDistribution::mint_ticket(Origin::signed(1), 0, 42, 10));
@@ -101,7 +101,6 @@ fn lifecycle_should_work() {
 			0,
 			42,
 			bvec![42, 42],
-			false
 		));
 		assert!(TicketMetadataOf::<Test>::contains_key(0, 42));
 		assert_ok!(GameDistribution::set_ticket_metadata(
@@ -109,7 +108,6 @@ fn lifecycle_should_work() {
 			0,
 			69,
 			bvec![69, 69],
-			false
 		));
 		assert!(TicketMetadataOf::<Test>::contains_key(0, 69));
 
@@ -217,6 +215,7 @@ fn origin_guards_should_work() {
 			GameDistribution::thaw_ticket(Origin::signed(2), 0, 42),
 			Error::<Test>::NoPermission
 		);
+		Balances::make_free_balance_be(&2, 1001);
 		// everybody can mint tickets
 		assert_ok!(GameDistribution::mint_ticket(Origin::signed(2), 0, 69, 2));
 		assert_noop!(
@@ -237,7 +236,7 @@ fn transfer_owner_should_work() {
 		Balances::make_free_balance_be(&1, 100);
 		Balances::make_free_balance_be(&2, 100);
 		Balances::make_free_balance_be(&3, 100);
-		assert_ok!(GameDistribution::create_game(Origin::signed(1), 0, 1, 1000));
+		assert_ok!(GameDistribution::create_game(Origin::signed(1), 0, 1, 99));
 		assert_eq!(games(), vec![(1, 0)]);
 		assert_ok!(GameDistribution::transfer_game_ownership(Origin::signed(1), 0, 2));
 		assert_eq!(games(), vec![(2, 0)]);
@@ -252,7 +251,6 @@ fn transfer_owner_should_work() {
 			Origin::signed(2),
 			0,
 			bvec![0u8; 20],
-			false
 		));
 		assert_ok!(GameDistribution::mint_ticket(Origin::signed(1), 0, 42, 1));
 		assert_ok!(GameDistribution::set_ticket_metadata(
@@ -260,7 +258,6 @@ fn transfer_owner_should_work() {
 			0,
 			42,
 			bvec![0u8; 20],
-			false
 		));
 		assert_ok!(GameDistribution::transfer_game_ownership(Origin::signed(2), 0, 3));
 		assert_eq!(games(), vec![(3, 0)]);
@@ -270,6 +267,7 @@ fn transfer_owner_should_work() {
 #[test]
 fn set_team_should_work() {
 	new_test_ext().execute_with(|| {
+		Balances::make_free_balance_be(&2, 1001);
 		assert_ok!(GameDistribution::create_game(Origin::signed(1), 0, 1, 1000));
 		assert_ok!(GameDistribution::set_game_team(Origin::signed(1), 0, 2, 3, 4));
 
@@ -286,13 +284,13 @@ fn set_game_metadata_should_work() {
 	new_test_ext().execute_with(|| {
 		// Cannot add metadata to unknown asset
 		assert_noop!(
-			GameDistribution::set_game_metadata(Origin::signed(1), 0, bvec![0u8; 20], false),
+			GameDistribution::set_game_metadata(Origin::signed(1), 0, bvec![0u8; 20]),
 			Error::<Test>::Unknown,
 		);
 		assert_ok!(GameDistribution::create_game(Origin::signed(1), 0, 1, 1000));
 		// Cannot add metadata to unowned asset
 		assert_noop!(
-			GameDistribution::set_game_metadata(Origin::signed(2), 0, bvec![0u8; 20], false),
+			GameDistribution::set_game_metadata(Origin::signed(2), 0, bvec![0u8; 20]),
 			Error::<Test>::NoPermission,
 		);
 
@@ -301,7 +299,6 @@ fn set_game_metadata_should_work() {
 			Origin::signed(1),
 			0,
 			bvec![0u8; 20],
-			false
 		));
 		assert!(GameMetadataOf::<Test>::contains_key(0));
 
@@ -309,21 +306,8 @@ fn set_game_metadata_should_work() {
 			Origin::signed(1),
 			0,
 			bvec![0u8; 15],
-			false
 		));
 
-		// Can't set or clear metadata once frozen
-		assert_ok!(GameDistribution::set_game_metadata(Origin::signed(1), 0, bvec![0u8; 15], true));
-		assert_noop!(
-			GameDistribution::set_game_metadata(Origin::signed(1), 0, bvec![0u8; 15], false),
-			Error::<Test>::Frozen,
-		);
-		assert_noop!(
-			GameDistribution::clear_game_metadata(Origin::signed(1), 0),
-			Error::<Test>::Frozen
-		);
-
-		assert_ok!(GameDistribution::set_game_metadata(Origin::signed(1), 0, bvec![0u8; 15], true));
 		assert_noop!(
 			GameDistribution::clear_game_metadata(Origin::signed(2), 0),
 			Error::<Test>::NoPermission
@@ -345,7 +329,7 @@ fn set_ticket_metadata_should_work() {
 		assert_ok!(GameDistribution::mint_ticket(Origin::signed(1), 0, 42, 1));
 		// Cannot add metadata to unowned asset
 		assert_noop!(
-			GameDistribution::set_ticket_metadata(Origin::signed(2), 0, 42, bvec![0u8; 20], false),
+			GameDistribution::set_ticket_metadata(Origin::signed(2), 0, 42, bvec![0u8; 20]),
 			Error::<Test>::NoPermission,
 		);
 
@@ -355,7 +339,6 @@ fn set_ticket_metadata_should_work() {
 			0,
 			42,
 			bvec![0u8; 20],
-			false
 		));
 		assert!(TicketMetadataOf::<Test>::contains_key(0, 42));
 
@@ -364,32 +347,13 @@ fn set_ticket_metadata_should_work() {
 			0,
 			42,
 			bvec![0u8; 15],
-			false
 		));
 		assert_ok!(GameDistribution::set_ticket_metadata(
 			Origin::signed(1),
 			0,
 			42,
 			bvec![0u8; 25],
-			false
 		));
-
-		// Can't set or clear metadata once frozen
-		assert_ok!(GameDistribution::set_ticket_metadata(
-			Origin::signed(1),
-			0,
-			42,
-			bvec![0u8; 15],
-			true
-		));
-		assert_noop!(
-			GameDistribution::set_ticket_metadata(Origin::signed(1), 0, 42, bvec![0u8; 15], false),
-			Error::<Test>::Frozen,
-		);
-		assert_noop!(
-			GameDistribution::clear_ticket_metadata(Origin::signed(1), 0, 42),
-			Error::<Test>::Frozen
-		);
 
 		// Clear Metadata
 		assert_ok!(GameDistribution::set_ticket_metadata(
@@ -397,7 +361,6 @@ fn set_ticket_metadata_should_work() {
 			0,
 			42,
 			bvec![0u8; 15],
-			false
 		));
 		assert_noop!(
 			GameDistribution::clear_ticket_metadata(Origin::signed(2), 0, 42),
@@ -470,69 +433,11 @@ fn set_attribute_should_work() {
 }
 
 #[test]
-fn set_attribute_should_respect_freeze_ticket() {
-	new_test_ext().execute_with(|| {
-		assert_ok!(GameDistribution::create_game(Origin::signed(1), 0, 1, 1000));
-
-		assert_ok!(GameDistribution::set_attribute(Origin::signed(1), 0, None, bvec![0], bvec![0]));
-		assert_ok!(GameDistribution::set_attribute(
-			Origin::signed(1),
-			0,
-			Some(0),
-			bvec![0],
-			bvec![0]
-		));
-		assert_ok!(GameDistribution::set_attribute(
-			Origin::signed(1),
-			0,
-			Some(1),
-			bvec![0],
-			bvec![0]
-		));
-		assert_eq!(
-			attributes(0),
-			vec![
-				(None, bvec![0], bvec![0]),
-				(Some(0), bvec![0], bvec![0]),
-				(Some(1), bvec![0], bvec![0]),
-			]
-		);
-
-		assert_ok!(GameDistribution::set_game_metadata(Origin::signed(1), 0, bvec![], true));
-		let e = Error::<Test>::Frozen;
-		assert_noop!(
-			GameDistribution::set_attribute(Origin::signed(1), 0, None, bvec![0], bvec![0]),
-			e
-		);
-		assert_ok!(GameDistribution::set_attribute(
-			Origin::signed(1),
-			0,
-			Some(0),
-			bvec![0],
-			bvec![1]
-		));
-
-		assert_ok!(GameDistribution::set_ticket_metadata(Origin::signed(1), 0, 0, bvec![], true));
-		let e = Error::<Test>::Frozen;
-		assert_noop!(
-			GameDistribution::set_attribute(Origin::signed(1), 0, Some(0), bvec![0], bvec![1]),
-			e
-		);
-		assert_ok!(GameDistribution::set_attribute(
-			Origin::signed(1),
-			0,
-			Some(1),
-			bvec![0],
-			bvec![1]
-		));
-	});
-}
-
-#[test]
 fn burn_works() {
 	new_test_ext().execute_with(|| {
 		Balances::make_free_balance_be(&1, 100);
-		assert_ok!(GameDistribution::create_game(Origin::signed(1), 0, 1, 1000));
+		Balances::make_free_balance_be(&2, 201);
+		assert_ok!(GameDistribution::create_game(Origin::signed(1), 0, 1, 100));
 		assert_ok!(GameDistribution::set_game_team(Origin::signed(1), 0, 2, 3, 4));
 
 		assert_noop!(

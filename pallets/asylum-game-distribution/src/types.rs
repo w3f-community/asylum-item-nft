@@ -69,8 +69,6 @@ pub struct GameMetadata<StringLimit: Get<u32>> {
 	/// generally be either a JSON dump or the hash of some JSON which can be found on a
 	/// hash-addressable global publication system such as IPFS.
 	pub(super) data: BoundedVec<u8, StringLimit>,
-	/// Whether the asset metadata may be changed by a non Force origin.
-	pub(super) is_frozen: bool,
 }
 
 #[derive(Clone, Encode, Decode, Eq, PartialEq, RuntimeDebug, Default, TypeInfo)]
@@ -80,6 +78,4 @@ pub struct TicketMetadata<StringLimit: Get<u32>> {
 	/// generally be either a JSON dump or the hash of some JSON which can be found on a
 	/// hash-addressable global publication system such as IPFS.
 	pub(super) data: BoundedVec<u8, StringLimit>,
-	/// Whether the asset metadata may be changed by a non Force origin.
-	pub(super) is_frozen: bool,
 }
