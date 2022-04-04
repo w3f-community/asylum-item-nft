@@ -6,6 +6,7 @@
 #[cfg(feature = "std")]
 include!(concat!(env!("OUT_DIR"), "/wasm_binary.rs"));
 
+use frame_support::traits::ConstU32;
 use pallet_grandpa::{
 	fg_primitives, AuthorityId as GrandpaId, AuthorityList as GrandpaAuthorityList,
 };
@@ -39,9 +40,6 @@ use pallet_transaction_payment::CurrencyAdapter;
 #[cfg(any(feature = "std", test))]
 pub use sp_runtime::BuildStorage;
 pub use sp_runtime::{Perbill, Permill};
-
-/// Import the template pallet.
-pub use pallet_template;
 
 /// An index to a block.
 pub type BlockNumber = u32;
@@ -100,6 +98,7 @@ pub const VERSION: RuntimeVersion = RuntimeVersion {
 	//   the compatible custom types.
 	spec_version: 100,
 	impl_version: 1,
+	state_version: 1,
 	apis: RUNTIME_API_VERSIONS,
 	transaction_version: 1,
 };
@@ -191,6 +190,7 @@ impl frame_system::Config for Runtime {
 	type SS58Prefix = SS58Prefix;
 	/// The set code logic, just the default since we're not a parachain.
 	type OnSetCode = ();
+	type MaxConsumers = ConstU32<32>;
 }
 
 impl pallet_randomness_collective_flip::Config for Runtime {}
@@ -274,8 +274,49 @@ impl pallet_sudo::Config for Runtime {
 	type Call = Call;
 }
 
-/// Configure the pallet-template in pallets/template.
-impl pallet_template::Config for Runtime {
+parameter_types! {
+	pub const ClassDeposit: Balance = 100;
+	pub const InstanceDeposit: Balance = 1;
+	pub const KeyLimit: u32 = 32;
+	pub const ValueLimit: u32 = 256;
+	pub const UniquesMetadataDepositBase: Balance = 100;
+	pub const AttributeDepositBase: Balance = 10;
+	pub const DepositPerByte: Balance = 10;
+	pub const UniquesStringLimit: u32 = 128;
+}
+
+impl pallet_uniques::Config for Runtime {
+	type Event = Event;
+	type ClassId = u32;
+	type InstanceId = u32;
+	type Currency = Balances;
+	type ForceOrigin = frame_system::EnsureRoot<AccountId>;
+	type ClassDeposit = ClassDeposit;
+	type InstanceDeposit = InstanceDeposit;
+	type MetadataDepositBase = UniquesMetadataDepositBase;
+	type AttributeDepositBase = AttributeDepositBase;
+	type DepositPerByte = DepositPerByte;
+	type StringLimit = UniquesStringLimit;
+	type KeyLimit = KeyLimit;
+	type ValueLimit = ValueLimit;
+	type WeightInfo = ();
+}
+
+parameter_types! {
+	pub const MaxRecursions: u32 = 10;
+	pub const ResourceSymbolLimit: u32 = 10;
+	pub const CollectionSymbolLimit: u32 = 100;
+}
+
+impl pallet_rmrk_core::Config for Runtime {
+	type Event = Event;
+	type ProtocolOrigin = frame_system::EnsureRoot<AccountId>;
+	type MaxRecursions = MaxRecursions;
+	type ResourceSymbolLimit = ResourceSymbolLimit;
+	type CollectionSymbolLimit = CollectionSymbolLimit;
+}
+
+impl asylum_core::Config for Runtime {
 	type Event = Event;
 }
 
@@ -295,7 +336,9 @@ construct_runtime!(
 		TransactionPayment: pallet_transaction_payment,
 		Sudo: pallet_sudo,
 		// Include the custom logic from the pallet-template in the runtime.
-		TemplateModule: pallet_template,
+		Uniques: pallet_uniques,
+		RmrkCore: pallet_rmrk_core,
+		Asylum: asylum_core
 	}
 );
 
@@ -474,7 +517,6 @@ impl_runtime_apis! {
 			list_benchmark!(list, extra, frame_system, SystemBench::<Runtime>);
 			list_benchmark!(list, extra, pallet_balances, Balances);
 			list_benchmark!(list, extra, pallet_timestamp, Timestamp);
-			list_benchmark!(list, extra, pallet_template, TemplateModule);
 
 			let storage_info = AllPalletsWithSystem::storage_info();
 
@@ -512,7 +554,6 @@ impl_runtime_apis! {
 			add_benchmark!(params, batches, frame_system, SystemBench::<Runtime>);
 			add_benchmark!(params, batches, pallet_balances, Balances);
 			add_benchmark!(params, batches, pallet_timestamp, Timestamp);
-			add_benchmark!(params, batches, pallet_template, TemplateModule);
 
 			Ok(batches)
 		}

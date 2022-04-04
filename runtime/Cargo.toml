@@ -1,5 +1,5 @@
 [package]
-name = 'node-template-runtime'
+name = 'node-asylum-runtime'
 version = '4.0.0-dev'
 description = 'A fresh FRAME-based Substrate runtime, ready for hacking.'
 authors = ['Substrate DevHub <https://github.com/substrate-developer-hub>']
@@ -12,14 +12,21 @@ repository = 'https://github.com/substrate-developer-hub/substrate-node-template
 [package.metadata.docs.rs]
 targets = ['x86_64-unknown-linux-gnu']
 
-[dependencies.pallet-template]
+[dependencies.asylum-core]
 default-features = false
-path = '../pallets/template'
-version = '4.0.0-dev'
+path = '../pallets/asylum-core'
+version = '0.0.1'
+
+[dependencies.pallet-rmrk-core]
+default-features = false
+git = 'https://github.com/SupremaLex/rmrk-substrate.git'
+branch = "feat/resource_removal"
+package = 'pallet-rmrk-core'
+version = '0.0.1'
 
 [build-dependencies.substrate-wasm-builder]
 git = 'https://github.com/paritytech/substrate.git'
-tag = 'monthly-2021-12'
+branch = "polkadot-v0.9.17"
 version = '5.0.0-dev'
 
 [dependencies.codec]
@@ -32,38 +39,38 @@ version = '2.0.0'
 default-features = false
 git = 'https://github.com/paritytech/substrate.git'
 optional = true
-tag = 'monthly-2021-12'
+branch = "polkadot-v0.9.17"
 version = '4.0.0-dev'
 
 [dependencies.frame-executive]
 default-features = false
 git = 'https://github.com/paritytech/substrate.git'
-tag = 'monthly-2021-12'
+branch = "polkadot-v0.9.17"
 version = '4.0.0-dev'
 
 [dependencies.frame-support]
 default-features = false
 git = 'https://github.com/paritytech/substrate.git'
-tag = 'monthly-2021-12'
+branch = "polkadot-v0.9.17"
 version = '4.0.0-dev'
 
 [dependencies.frame-system]
 default-features = false
 git = 'https://github.com/paritytech/substrate.git'
-tag = 'monthly-2021-12'
+branch = "polkadot-v0.9.17"
 version = '4.0.0-dev'
 
 [dependencies.frame-system-benchmarking]
 default-features = false
 git = 'https://github.com/paritytech/substrate.git'
 optional = true
-tag = 'monthly-2021-12'
+branch = "polkadot-v0.9.17"
 version = '4.0.0-dev'
 
 [dependencies.frame-system-rpc-runtime-api]
 default-features = false
 git = 'https://github.com/paritytech/substrate.git'
-tag = 'monthly-2021-12'
+branch = "polkadot-v0.9.17"
 version = '4.0.0-dev'
 
 [dependencies.hex-literal]
@@ -73,49 +80,55 @@ version = '0.3.1'
 [dependencies.pallet-aura]
 default-features = false
 git = 'https://github.com/paritytech/substrate.git'
-tag = 'monthly-2021-12'
+branch = "polkadot-v0.9.17"
 version = '4.0.0-dev'
 
 [dependencies.pallet-balances]
 default-features = false
 git = 'https://github.com/paritytech/substrate.git'
-tag = 'monthly-2021-12'
+branch = "polkadot-v0.9.17"
 version = '4.0.0-dev'
 
 [dependencies.pallet-grandpa]
 default-features = false
 git = 'https://github.com/paritytech/substrate.git'
-tag = 'monthly-2021-12'
+branch = "polkadot-v0.9.17"
 version = '4.0.0-dev'
 
 [dependencies.pallet-randomness-collective-flip]
 default-features = false
 git = 'https://github.com/paritytech/substrate.git'
-tag = 'monthly-2021-12'
+branch = "polkadot-v0.9.17"
 version = '4.0.0-dev'
 
 [dependencies.pallet-sudo]
 default-features = false
 git = 'https://github.com/paritytech/substrate.git'
-tag = 'monthly-2021-12'
+branch = "polkadot-v0.9.17"
 version = '4.0.0-dev'
 
 [dependencies.pallet-timestamp]
 default-features = false
 git = 'https://github.com/paritytech/substrate.git'
-tag = 'monthly-2021-12'
+branch = "polkadot-v0.9.17"
 version = '4.0.0-dev'
 
 [dependencies.pallet-transaction-payment]
 default-features = false
 git = 'https://github.com/paritytech/substrate.git'
-tag = 'monthly-2021-12'
+branch = "polkadot-v0.9.17"
 version = '4.0.0-dev'
 
 [dependencies.pallet-transaction-payment-rpc-runtime-api]
 default-features = false
 git = 'https://github.com/paritytech/substrate.git'
-tag = 'monthly-2021-12'
+branch = "polkadot-v0.9.17"
+version = '4.0.0-dev'
+
+[dependencies.pallet-uniques]
+default-features = false
+git = 'https://github.com/paritytech/substrate.git'
+branch = "polkadot-v0.9.17"
 version = '4.0.0-dev'
 
 [dependencies.scale-info]
@@ -126,67 +139,67 @@ version = '1.0'
 [dependencies.sp-api]
 default-features = false
 git = 'https://github.com/paritytech/substrate.git'
-tag = 'monthly-2021-12'
+branch = "polkadot-v0.9.17"
 version = '4.0.0-dev'
 
 [dependencies.sp-block-builder]
 default-features = false
 git = 'https://github.com/paritytech/substrate.git'
-tag = 'monthly-2021-12'
+branch = "polkadot-v0.9.17"
 version = '4.0.0-dev'
 
 [dependencies.sp-consensus-aura]
 default-features = false
 git = 'https://github.com/paritytech/substrate.git'
-tag = 'monthly-2021-12'
+branch = "polkadot-v0.9.17"
 version = '0.10.0-dev'
 
 [dependencies.sp-core]
 default-features = false
 git = 'https://github.com/paritytech/substrate.git'
-tag = 'monthly-2021-12'
-version = '4.0.0-dev'
+branch = "polkadot-v0.9.17"
+version = '5.0.0'
 
 [dependencies.sp-inherents]
 default-features = false
 git = 'https://github.com/paritytech/substrate.git'
-tag = 'monthly-2021-12'
+branch = "polkadot-v0.9.17"
 version = '4.0.0-dev'
 
 [dependencies.sp-offchain]
 default-features = false
 git = 'https://github.com/paritytech/substrate.git'
-tag = 'monthly-2021-12'
+branch = "polkadot-v0.9.17"
 version = '4.0.0-dev'
 
 [dependencies.sp-runtime]
 default-features = false
 git = 'https://github.com/paritytech/substrate.git'
-tag = 'monthly-2021-12'
-version = '4.0.0-dev'
+branch = "polkadot-v0.9.17"
+version = '5.0.0'
 
 [dependencies.sp-session]
 default-features = false
 git = 'https://github.com/paritytech/substrate.git'
-tag = 'monthly-2021-12'
+branch = "polkadot-v0.9.17"
 version = '4.0.0-dev'
 
 [dependencies.sp-std]
 default-features = false
 git = 'https://github.com/paritytech/substrate.git'
-tag = 'monthly-2021-12'
-version = '4.0.0-dev'
+branch = "polkadot-v0.9.17"
+version = '4.0.0'
 
 [dependencies.sp-transaction-pool]
 default-features = false
 git = 'https://github.com/paritytech/substrate.git'
-tag = 'monthly-2021-12'
+branch = "polkadot-v0.9.17"
 version = '4.0.0-dev'
 
 [dependencies.sp-version]
 default-features = false
 git = 'https://github.com/paritytech/substrate.git'
-tag = 'monthly-2021-12'
+branch = "polkadot-v0.9.17"
 version = '4.0.0-dev'
 
 [features]
@@ -198,7 +211,6 @@ runtime-benchmarks = [
     'frame-system/runtime-benchmarks',
     'hex-literal',
     'pallet-balances/runtime-benchmarks',
-    'pallet-template/runtime-benchmarks',
     'pallet-timestamp/runtime-benchmarks',
     'sp-runtime/runtime-benchmarks',
 ]
@@ -214,10 +226,12 @@ std = [
     'pallet-grandpa/std',
     'pallet-randomness-collective-flip/std',
     'pallet-sudo/std',
-    'pallet-template/std',
     'pallet-timestamp/std',
     'pallet-transaction-payment-rpc-runtime-api/std',
     'pallet-transaction-payment/std',
+    'pallet-uniques/std',
+    'pallet-rmrk-core/std',
+    'asylum-core/std',
     'sp-api/std',
     'sp-block-builder/std',
     'sp-consensus-aura/std',

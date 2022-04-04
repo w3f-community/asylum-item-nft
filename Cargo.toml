@@ -1,8 +1,9 @@
 [workspace]
 members = [
     'node',
-    'pallets/template',
+    'pallets/asylum-core',
     'runtime',
+    'asylum-traits',
 ]
 [profile.release]
 panic = 'unwind'
