@@ -4,14 +4,25 @@ use crate::primitives::{ItemId, ItemTemplateId};
 
 /// Trait for providing basic functionality of Asylum Item
 pub trait Item<AccountId, BoundedName, BoundedString> {
-	/// Regular Item(NFT) mint
+	/// Create item with the same set of interpretations as Template has
+	///
+	/// # Arguments
+	///
+	/// * `sender` - transaction sender
+	/// * `template_id` - template id
+	/// * `item_id` - id of nft minted by rmrk-core-pallet
 	fn item_mint_from_template(
 		sender: AccountId,
 		template_id: ItemTemplateId,
 		item_id: ItemId,
 	) -> Result<(ItemTemplateId, ItemId), DispatchError>; // ensure(template.issuer = sender)
 
-	/// Regular Item(NFT) burn
+	/// Destroy item
+	///
+	/// # Arguments
+	///
+	/// * `template_id` - template id
+	/// * `item_id` - id of item
 	fn item_burn(
 		template_id: ItemTemplateId,
 		item_id: ItemId,
@@ -21,9 +32,14 @@ pub trait Item<AccountId, BoundedName, BoundedString> {
 	///
 	/// # Arguments
 	///
+	/// * `sender` - transaction sender
 	/// * `template_name_or_id` - template name or template id
 	/// * `item_id` - id of the item to update
-	fn item_update(sender: AccountId, template_id: ItemTemplateId, item_id: ItemId) -> DispatchResult; // ensure(item.owner = sender)
+	fn item_update(
+		sender: AccountId,
+		template_id: ItemTemplateId,
+		item_id: ItemId,
+	) -> DispatchResult; // ensure(item.owner = sender)
 }
 
 /// Trait for providing attributes support for Asylum Item

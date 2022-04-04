@@ -160,6 +160,21 @@ dependencies = [
 ]
 
 [[package]]
+name = "asylum-game-distribution"
+version = "0.0.1"
+dependencies = [
+ "frame-support",
+ "frame-system",
+ "pallet-balances",
+ "parity-scale-codec",
+ "scale-info",
+ "sp-core",
+ "sp-io",
+ "sp-runtime",
+ "sp-std",
+]
+
+[[package]]
 name = "asylum-traits"
 version = "0.0.1"
 dependencies = [

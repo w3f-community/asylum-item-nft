@@ -2,6 +2,7 @@
 members = [
     'node',
     'pallets/asylum-core',
+    'pallets/asylum-game-distribution',
     'runtime',
     'asylum-traits',
 ]

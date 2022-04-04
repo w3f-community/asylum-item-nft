@@ -11,9 +11,8 @@ pub trait ItemTemplate<AccountId, BoundedString, BoundedInterpretation> {
 	///
 	/// # Arguments
 	///
-	/// * `template_name` - Template's name
-	/// * `metadata` - A bounded string that hold ifsh hash to metadata
-	/// * `interpretations` - vec of pair of (InterpretationTypeName, InterpretationName)
+	/// * `template_id` - Collection's id created by rmrk-core-pallet
+	/// * `interpretations` - vec of pairs of (InterpretationTypeName, Interpretation)
 	///
 	/// # Return
 	///
@@ -27,17 +26,20 @@ pub trait ItemTemplate<AccountId, BoundedString, BoundedInterpretation> {
 	///
 	/// # Arguments
 	///
+	/// * `sender` - transaction sender
 	/// * `proposal_id` - Template's update proposal id
-	/// * `template_name_or_id` - Template's id or name
-	fn template_update(proposal_id: ProposalId, template_id: ItemTemplateId) -> DispatchResult;
+	/// * `template_id` - Template's id
+	fn template_update(
+		sender: AccountId,
+		proposal_id: ProposalId,
+		template_id: ItemTemplateId,
+	) -> DispatchResult;
 
 	///	Destroy empty template
 	///
 	/// # Arguments
 	///
-	/// * `template_name` - Template's name
-	/// * `metadata` - A bounded string that hold ifsh hash to metadata
-	/// * `interpretations` - vec of pair of (InterpretationTypeName, InterpretationName)
+	/// * `template_id` - Template's id
 	///
 	/// # Return
 	///
