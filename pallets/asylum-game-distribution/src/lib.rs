@@ -395,7 +395,7 @@ pub mod pallet {
 
 			Game::<T>::try_mutate(game, |maybe_details| {
 				let details = maybe_details.as_mut().ok_or(Error::<T>::Unknown)?;
-				ensure!(&origin == &details.freezer, Error::<T>::NoPermission);
+				ensure!(origin == details.freezer, Error::<T>::NoPermission);
 
 				details.is_frozen = true;
 
@@ -413,7 +413,7 @@ pub mod pallet {
 
 			Game::<T>::try_mutate(game, |maybe_details| {
 				let details = maybe_details.as_mut().ok_or(Error::<T>::Unknown)?;
-				ensure!(&origin == &details.admin, Error::<T>::NoPermission);
+				ensure!(origin == details.admin, Error::<T>::NoPermission);
 
 				details.is_frozen = false;
 
@@ -433,7 +433,8 @@ pub mod pallet {
 
 			Game::<T>::try_mutate(game, |maybe_details| {
 				let details = maybe_details.as_mut().ok_or(Error::<T>::Unknown)?;
-				ensure!(&origin == &details.owner, Error::<T>::NoPermission);
+				ensure!(origin == details.owner, Error::<T>::NoPermission);
+
 				if details.owner == owner {
 					return Ok(())
 				}
@@ -462,7 +463,7 @@ pub mod pallet {
 
 			Game::<T>::try_mutate(game, |maybe_details| {
 				let details = maybe_details.as_mut().ok_or(Error::<T>::Unknown)?;
-				ensure!(&origin == &details.owner, Error::<T>::NoPermission);
+				ensure!(origin == details.owner, Error::<T>::NoPermission);
 
 				details.issuer = issuer.clone();
 				details.admin = admin.clone();
@@ -486,7 +487,7 @@ pub mod pallet {
 			let game_details = Game::<T>::get(&game).ok_or(Error::<T>::Unknown)?;
 			let mut details = Ticket::<T>::get(&game, &ticket).ok_or(Error::<T>::Unknown)?;
 
-			let permitted = &check == &game_details.admin || &check == &details.owner;
+			let permitted = check == game_details.admin || check == details.owner;
 			ensure!(permitted, Error::<T>::NoPermission);
 
 			details.approved = Some(delegate);
@@ -514,7 +515,7 @@ pub mod pallet {
 			let game_details = Game::<T>::get(&game).ok_or(Error::<T>::Unknown)?;
 			let mut details = Ticket::<T>::get(&game, &ticket).ok_or(Error::<T>::Unknown)?;
 
-			let permitted = &check == &game_details.admin || &check == &details.owner;
+			let permitted = check == game_details.admin || check == details.owner;
 			ensure!(permitted, Error::<T>::NoPermission);
 
 			let maybe_check_delegate = maybe_check_delegate.map(T::Lookup::lookup).transpose()?;
@@ -570,7 +571,7 @@ pub mod pallet {
 			let mut game_details = Game::<T>::get(&game).ok_or(Error::<T>::Unknown)?;
 			ensure!(check_owner == game_details.owner, Error::<T>::NoPermission);
 
-			if let Some(_) = Attribute::<T>::take((game, maybe_ticket, &key)) {
+			if Attribute::<T>::take((game, maybe_ticket, &key)).is_some() {
 				game_details.attributes.saturating_dec();
 				Game::<T>::insert(game, &game_details);
 				Self::deposit_event(Event::AttributeCleared { game, maybe_ticket, key });
@@ -592,7 +593,6 @@ pub mod pallet {
 			ensure!(check_owner == game_details.owner, Error::<T>::NoPermission);
 
 			TicketMetadataOf::<T>::try_mutate_exists(game, ticket, |metadata| {
-
 				if metadata.is_none() {
 					game_details.instance_metadatas.saturating_inc();
 				}
@@ -617,7 +617,6 @@ pub mod pallet {
 			ensure!(check_owner == game_details.owner, Error::<T>::NoPermission);
 
 			TicketMetadataOf::<T>::try_mutate_exists(game, ticket, |metadata| {
-
 				if metadata.is_some() {
 					game_details.instance_metadatas.saturating_dec();
 				}
@@ -640,7 +639,6 @@ pub mod pallet {
 			ensure!(check_owner == details.owner, Error::<T>::NoPermission);
 
 			GameMetadataOf::<T>::try_mutate_exists(game, |metadata| {
-
 				Game::<T>::insert(&game, details);
 
 				*metadata = Some(GameMetadata { data: data.clone() });

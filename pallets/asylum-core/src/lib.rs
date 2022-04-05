@@ -135,13 +135,11 @@ pub mod pallet {
 				TryInto::<BoundedVec<u8, T>>::try_into(string.as_bytes().to_vec()).unwrap()
 			}
 
-			let mut i = 0;
-			for (type_name, metadata) in &self.interpretation_types {
-				IntepretationTypeNames::<T>::insert(bounded(type_name), i);
+			for (i, (type_name, metadata)) in self.interpretation_types.iter().enumerate() {
+				IntepretationTypeNames::<T>::insert(bounded(type_name), i as u32);
 				let metadata = bounded(metadata);
 				let info = IntepretationTypeInfo { metadata };
-				IntepretationTypes::<T>::insert(i, info);
-				i += 1;
+				IntepretationTypes::<T>::insert(i as u32, info);
 			}
 		}
 	}
@@ -288,7 +286,7 @@ pub mod pallet {
 				pallet_uniques::Event::Created {
 					class: template_id,
 					creator: sender.clone(),
-					owner: sender.clone(),
+					owner: sender,
 				},
 			)?;
 
@@ -314,11 +312,7 @@ pub mod pallet {
 			let template_id = Self::template_destroy(template_id)?;
 			pallet_rmrk_core::Pallet::<T>::collection_burn(sender.clone(), template_id)?;
 			let witness = pallet_uniques::Pallet::<T>::get_destroy_witness(&template_id).unwrap();
-			pallet_uniques::Pallet::<T>::do_destroy_class(
-				template_id,
-				witness,
-				sender.clone().into(),
-			)?;
+			pallet_uniques::Pallet::<T>::do_destroy_class(template_id, witness, sender.into())?;
 
 			Self::deposit_event(Event::TemplateDestroyed { template_id });
 			Ok(())
@@ -351,7 +345,7 @@ pub mod pallet {
 		/// has.
 		///
 		/// Origin must be Signed and sender must be Issuer of Template.
-		/// 
+		///
 		/// - `owner`: The owner of the minted item.
 		/// - `recipient`: The recipient of the item 'template_id' Template.
 		/// - `template_id`: The template name or id.
@@ -379,10 +373,10 @@ pub mod pallet {
 			pallet_uniques::Pallet::<T>::do_mint(
 				template_id,
 				item_id,
-				sender.clone(),
+				sender.clone(), // TODO: replace sender with owner
 				|_details| Ok(()),
 			)?;
-			Self::item_mint_from_template(sender.clone(), template_id, item_id)?;
+			Self::item_mint_from_template(sender, template_id, item_id)?;
 
 			Self::deposit_event(Event::ItemMinted { template_id, item_id, recipient });
 			Ok(())

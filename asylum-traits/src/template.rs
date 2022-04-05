@@ -7,7 +7,7 @@ use sp_std::vec::Vec;
 
 /// Trait for providing Template(NFT collection) functionality for Asylum
 pub trait ItemTemplate<AccountId, BoundedString, BoundedInterpretation> {
-	///	Create new item's Template
+	/// Create new item's Template
 	///
 	/// # Arguments
 	///
@@ -22,7 +22,7 @@ pub trait ItemTemplate<AccountId, BoundedString, BoundedInterpretation> {
 		interpretations: Vec<Interpretation<BoundedString, BoundedInterpretation, BoundedString>>,
 	) -> Result<ItemTemplateId, DispatchError>;
 
-	///	Update item's Template according to approved proposal
+	/// Update item's Template according to approved proposal
 	///
 	/// # Arguments
 	///
@@ -35,7 +35,7 @@ pub trait ItemTemplate<AccountId, BoundedString, BoundedInterpretation> {
 		template_id: ItemTemplateId,
 	) -> DispatchResult;
 
-	///	Destroy empty template
+	/// Destroy empty template
 	///
 	/// # Arguments
 	///

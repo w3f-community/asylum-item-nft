@@ -56,10 +56,7 @@ impl<T: Config> Inspect<<T as SystemConfig>::AccountId> for Pallet<T> {
 	///
 	/// Default implementation is that all assets are transferable.
 	fn can_transfer(class: &Self::ClassId, instance: &Self::InstanceId) -> bool {
-		match (Game::<T>::get(class), Ticket::<T>::get(class, instance)) {
-			(Some(cd), Some(id)) if !cd.is_frozen && !id.is_frozen => true,
-			_ => false,
-		}
+		matches!((Game::<T>::get(class), Ticket::<T>::get(class, instance)), (Some(cd), Some(id)) if !cd.is_frozen && !id.is_frozen)
 	}
 }
 
@@ -71,11 +68,11 @@ impl<T: Config> Create<<T as SystemConfig>::AccountId> for Pallet<T> {
 		admin: &T::AccountId,
 	) -> DispatchResult {
 		Self::do_create_game(
-			class.clone(),
+			*class,
 			who.clone(),
 			admin.clone(),
 			Default::default(),
-			Event::GameCreated { game: class.clone(), creator: who.clone(), owner: admin.clone() },
+			Event::GameCreated { game: *class, creator: who.clone(), owner: admin.clone() },
 		)
 	}
 }
@@ -102,11 +99,11 @@ impl<T: Config> Mutate<<T as SystemConfig>::AccountId> for Pallet<T> {
 		instance: &Self::InstanceId,
 		who: &T::AccountId,
 	) -> DispatchResult {
-		Self::do_mint_ticket(class.clone(), instance.clone(), who.clone(), |_| Ok(()))
+		Self::do_mint_ticket(*class, *instance, who.clone(), |_| Ok(()))
 	}
 
 	fn burn_from(class: &Self::ClassId, instance: &Self::InstanceId) -> DispatchResult {
-		Self::do_burn_ticket(class.clone(), instance.clone(), |_, _| Ok(()))
+		Self::do_burn_ticket(*class, *instance, |_, _| Ok(()))
 	}
 }
 
@@ -116,7 +113,7 @@ impl<T: Config> Transfer<T::AccountId> for Pallet<T> {
 		instance: &Self::InstanceId,
 		destination: &T::AccountId,
 	) -> DispatchResult {
-		Self::do_transfer(class.clone(), instance.clone(), destination.clone(), |_, _| Ok(()))
+		Self::do_transfer(*class, *instance, destination.clone(), |_, _| Ok(()))
 	}
 }
 

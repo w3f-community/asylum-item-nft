@@ -46,7 +46,7 @@ impl<T: Config> Pallet<T> {
 				owner: owner.clone(),
 				issuer: admin.clone(),
 				admin: admin.clone(),
-				freezer: admin.clone(),
+				freezer: admin,
 				price,
 				instances: 0,
 				instance_metadatas: 0,
@@ -106,7 +106,7 @@ impl<T: Config> Pallet<T> {
 		Game::<T>::try_mutate(&game, |maybe_game_details| -> DispatchResult {
 			let game_details = maybe_game_details.as_mut().ok_or(Error::<T>::Unknown)?;
 
-			with_details(&game_details)?;
+			with_details(game_details)?;
 
 			let instances =
 				game_details.instances.checked_add(1).ok_or(ArithmeticError::Overflow)?;
@@ -133,7 +133,7 @@ impl<T: Config> Pallet<T> {
 			|maybe_class_details| -> Result<T::AccountId, DispatchError> {
 				let game_details = maybe_class_details.as_mut().ok_or(Error::<T>::Unknown)?;
 				let details = Ticket::<T>::get(&game, &ticket).ok_or(Error::<T>::Unknown)?;
-				with_details(&game_details, &details)?;
+				with_details(game_details, &details)?;
 
 				game_details.instances.saturating_dec();
 				Ok(details.owner)

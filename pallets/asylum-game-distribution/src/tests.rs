@@ -5,9 +5,9 @@ use sp_std::prelude::*;
 
 fn tickets() -> Vec<(u64, u32, u32)> {
 	let mut r: Vec<_> = Account::<Test>::iter().map(|x| x.0).collect();
-	r.sort();
+	r.sort_unstable();
 	let mut s: Vec<_> = Ticket::<Test>::iter().map(|x| (x.2.owner, x.0, x.1)).collect();
-	s.sort();
+	s.sort_unstable();
 	assert_eq!(r, s);
 	for class in Ticket::<Test>::iter()
 		.map(|x| x.0)
@@ -30,9 +30,9 @@ fn tickets() -> Vec<(u64, u32, u32)> {
 
 fn games() -> Vec<(u64, u32)> {
 	let mut r: Vec<_> = GameAccount::<Test>::iter().map(|x| (x.0, x.1)).collect();
-	r.sort();
+	r.sort_unstable();
 	let mut s: Vec<_> = Game::<Test>::iter().map(|x| (x.1.owner, x.0)).collect();
-	s.sort();
+	s.sort_unstable();
 	assert_eq!(r, s);
 	r
 }
@@ -96,19 +96,9 @@ fn lifecycle_should_work() {
 		assert_eq!(Game::<Test>::get(0).unwrap().instances, 2);
 		assert_eq!(Game::<Test>::get(0).unwrap().instance_metadatas, 0);
 
-		assert_ok!(GameDistribution::set_ticket_metadata(
-			Origin::signed(1),
-			0,
-			42,
-			bvec![42, 42],
-		));
+		assert_ok!(GameDistribution::set_ticket_metadata(Origin::signed(1), 0, 42, bvec![42, 42],));
 		assert!(TicketMetadataOf::<Test>::contains_key(0, 42));
-		assert_ok!(GameDistribution::set_ticket_metadata(
-			Origin::signed(1),
-			0,
-			69,
-			bvec![69, 69],
-		));
+		assert_ok!(GameDistribution::set_ticket_metadata(Origin::signed(1), 0, 69, bvec![69, 69],));
 		assert!(TicketMetadataOf::<Test>::contains_key(0, 69));
 
 		let w = Game::<Test>::get(0).unwrap().destroy_witness();
@@ -247,18 +237,11 @@ fn transfer_owner_should_work() {
 		);
 
 		// Mint and set metadata now and make sure that deposit gets transferred back.
-		assert_ok!(GameDistribution::set_game_metadata(
-			Origin::signed(2),
-			0,
-			bvec![0u8; 20],
-		));
+		assert_ok!(GameDistribution::set_game_metadata(Origin::signed(2), 0, bvec![0u8; 20],));
 		assert_ok!(GameDistribution::mint_ticket(Origin::signed(1), 0, 42, 1));
-		assert_ok!(GameDistribution::set_ticket_metadata(
-			Origin::signed(2),
-			0,
-			42,
-			bvec![0u8; 20],
-		));
+		assert_ok!(
+			GameDistribution::set_ticket_metadata(Origin::signed(2), 0, 42, bvec![0u8; 20],)
+		);
 		assert_ok!(GameDistribution::transfer_game_ownership(Origin::signed(2), 0, 3));
 		assert_eq!(games(), vec![(3, 0)]);
 	});
@@ -295,18 +278,10 @@ fn set_game_metadata_should_work() {
 		);
 
 		// Successfully add metadata
-		assert_ok!(GameDistribution::set_game_metadata(
-			Origin::signed(1),
-			0,
-			bvec![0u8; 20],
-		));
+		assert_ok!(GameDistribution::set_game_metadata(Origin::signed(1), 0, bvec![0u8; 20],));
 		assert!(GameMetadataOf::<Test>::contains_key(0));
 
-		assert_ok!(GameDistribution::set_game_metadata(
-			Origin::signed(1),
-			0,
-			bvec![0u8; 15],
-		));
+		assert_ok!(GameDistribution::set_game_metadata(Origin::signed(1), 0, bvec![0u8; 15],));
 
 		assert_noop!(
 			GameDistribution::clear_game_metadata(Origin::signed(2), 0),
@@ -334,34 +309,22 @@ fn set_ticket_metadata_should_work() {
 		);
 
 		// Successfully add metadata and take deposit
-		assert_ok!(GameDistribution::set_ticket_metadata(
-			Origin::signed(1),
-			0,
-			42,
-			bvec![0u8; 20],
-		));
+		assert_ok!(
+			GameDistribution::set_ticket_metadata(Origin::signed(1), 0, 42, bvec![0u8; 20],)
+		);
 		assert!(TicketMetadataOf::<Test>::contains_key(0, 42));
 
-		assert_ok!(GameDistribution::set_ticket_metadata(
-			Origin::signed(1),
-			0,
-			42,
-			bvec![0u8; 15],
-		));
-		assert_ok!(GameDistribution::set_ticket_metadata(
-			Origin::signed(1),
-			0,
-			42,
-			bvec![0u8; 25],
-		));
+		assert_ok!(
+			GameDistribution::set_ticket_metadata(Origin::signed(1), 0, 42, bvec![0u8; 15],)
+		);
+		assert_ok!(
+			GameDistribution::set_ticket_metadata(Origin::signed(1), 0, 42, bvec![0u8; 25],)
+		);
 
 		// Clear Metadata
-		assert_ok!(GameDistribution::set_ticket_metadata(
-			Origin::signed(1),
-			0,
-			42,
-			bvec![0u8; 15],
-		));
+		assert_ok!(
+			GameDistribution::set_ticket_metadata(Origin::signed(1), 0, 42, bvec![0u8; 15],)
+		);
 		assert_noop!(
 			GameDistribution::clear_ticket_metadata(Origin::signed(2), 0, 42),
 			Error::<Test>::NoPermission
