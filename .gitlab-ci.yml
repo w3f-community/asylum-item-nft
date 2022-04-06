@@ -21,6 +21,10 @@ image: "rust:latest"
 before_script:
    - apt-get update
    - apt install -y git clang curl libssl-dev llvm libudev-dev
+   - rustup default stable
+   - rustup update
+   - rustup update nightly
+   - rustup target add wasm32-unknown-unknown --toolchain nightly
 
 # Use cargo to test the project
 check:
@@ -31,4 +35,5 @@ test:
     - cargo test --workspace --all-features --verbose
 lint:
     script:
+    - rustup component add clippy
     - cargo clippy --workspace --all-features
