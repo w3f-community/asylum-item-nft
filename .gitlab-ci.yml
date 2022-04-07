@@ -17,7 +17,6 @@ build-job:
   - rustup update
   - rustup update nightly
   - rustup target add wasm32-unknown-unknown --toolchain nightly
-  - cargo +nightly install clippy
   script:
     - cargo build
 
@@ -28,7 +27,9 @@ test:
   
 lint:
   stage: test
+  before_script:
+  - rustup component add clippy
   script:
     - cargo fmt -- --check
-    - cargo clippy -- -D warnings
+    - cargo clippy
 
