@@ -19,6 +19,11 @@ build-job:
   before_script:
   - apt-get update
   - apt install -y git clang curl libssl-dev llvm libudev-dev
+  - rustup default stable
+  - rustup update
+  - rustup update nightly
+  - rustup target add wasm32-unknown-unknown --toolchain nightly
+  - cargo +nightly install clippy
   script:
     - cargo build --workspace --all-features
   cache:
@@ -37,12 +42,6 @@ test:
   
 lint:
   stage: test
-  before_script:
-      - rustup default stable
-      - rustup update
-      - rustup update nightly
-      - rustup target add wasm32-unknown-unknown --toolchain nightly
-      - cargo +nightly install clippy
   script:
     - cargo +nightly clippy --workspace --all-features
   cache:
