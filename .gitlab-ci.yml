@@ -1,22 +1,10 @@
-image: "rust:latest"
+image: "paritytech/ci-linux:production"
 
 include:
   - template: 'Workflows/MergeRequest-Pipelines.gitlab-ci.yml'
 
-cache:
-  paths:
-    - target/
-    - cargo/
-
-build-job:
+build:
   stage: build
-  before_script:
-  - apt-get update
-  - apt install -y git clang curl libssl-dev llvm libudev-dev
-  - rustup default stable
-  - rustup update
-  - rustup update nightly
-  - rustup target add wasm32-unknown-unknown --toolchain nightly
   script:
     - cargo build
 
@@ -27,9 +15,8 @@ test:
   
 lint:
   stage: test
-  before_script:
-  - rustup component add clippy
   script:
-    - cargo fmt -- --check
-    - cargo clippy
+    - cargo +nightly --version
+    - cargo +nightly fmt --all -- --check
+    - cargo +nightly clippy
 
