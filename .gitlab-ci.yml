@@ -1,8 +1,5 @@
 image: "rust:latest"
 
-variables:
-  CARGO_HOME: $CI_PROJECT_DIR/cargo
-
 include:
   - template: 'Workflows/MergeRequest-Pipelines.gitlab-ci.yml'
 
