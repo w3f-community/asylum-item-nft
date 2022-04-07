@@ -8,32 +8,44 @@
 # https://hub.docker.com/r/library/rust/tags/
 image: "rust:latest"
 
-# Optional: Pick zero or more services to be used on all builds.
-# Only needed when using a docker container to run your tests in.
-# Check out: http://docs.gitlab.com/ee/ci/docker/using_docker_images.html#what-is-a-service
-# services:
-#   - mysql:latest
-#   - redis:latest
-#   - postgres:latest
+variables:
+  CARGO_HOME: $CI_PROJECT_DIR/cargo
 
-# Optional: Install a C compiler, cmake and git into the container.
-# You will often need this when you (or any of your dependencies) depends on C code.
-before_script:
-   - apt-get update
-   - apt install -y git clang curl libssl-dev llvm libudev-dev
-   - rustup default stable
-   - rustup update
-   - rustup update nightly
-   - rustup target add wasm32-unknown-unknown --toolchain nightly
+include:
+  - template: 'Workflows/MergeRequest-Pipelines.gitlab-ci.yml'
 
-# Use cargo to test the project
-check:
-    script:
-    - cargo check --workspace --all-features
-test:
+build-job:
+  stage: build
+  before_script:
+  - apt-get update
+  - apt install -y git clang curl libssl-dev llvm libudev-dev
   script:
-    - cargo test --workspace --all-features --verbose
+    - cargo build --workspace --all-features
+  cache:
+    paths:
+      - target/
+      - cargo/
+
+test:
+  stage: test
+  script:
+    - cargo test --workspace --all-features
+  cache:
+    paths:
+      - target/
+      - cargo/
+  
 lint:
-    script:
-    - rustup component add clippy
-    - cargo clippy --workspace --all-features
+  stage: test
+  before_script:
+      - rustup default stable
+      - rustup update
+      - rustup update nightly
+      - rustup target add wasm32-unknown-unknown --toolchain nightly
+      - cargo +nightly install clippy
+  script:
+    - cargo +nightly clippy --workspace --all-features
+  cache:
+    paths:
+      - target/
+      - cargo/
