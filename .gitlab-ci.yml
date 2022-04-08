@@ -14,24 +14,15 @@ build:
   script:
     - rustup show
     - cargo build
-  cache:
-    <<: *global_cache
-    policy: push
 
 test:
   stage: test
   script:
     - cargo test
-  cache:
-    <<: *global_cache
-    policy: pull
   
 lint:
   stage: test
   script:
     - cargo +nightly fmt --all -- --check
     - cargo +nightly clippy
-  cache:
-    <<: *global_cache
-    policy: pull
 
