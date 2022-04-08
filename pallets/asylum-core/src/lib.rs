@@ -382,7 +382,7 @@ pub mod pallet {
 			Ok(())
 		}
 
-		/// Destroy a single asset instance.
+		/// Destroy an item.
 		///
 		/// Origin must be Signed and the sender should be the Admin of the
 		/// asset `template_id`.
@@ -407,12 +407,9 @@ pub mod pallet {
 			Ok(())
 		}
 
-		/// Move an asset from the sender account to another.
+		/// Move an item from the sender account to another.
 		///
-		/// Origin must be Signed and the signing account must be either:
-		/// - the Admin of the asset `template_id`;
-		/// - the Owner of the asset `item_id`;
-		/// - the approved delegate for the asset `item_id` (in this case, the approval is reset).
+		/// Origin must be Signed and the signing account must be owner of the item
 		///
 		/// Arguments:
 		/// - `template_id`: The template of the item to be transferred.

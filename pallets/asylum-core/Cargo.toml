@@ -1,10 +1,11 @@
 [package]
 name = "asylum-core"
 version = "0.0.1"
-description = 'Asylum item NFT'
-authors = ['Supercolony <https://supercolony.net/> & Asylum <https://asylum.space/>']
+description = 'Asylum core pallet'
+authors = ['horacio.lex@supercolony.net & Asylum <https://asylum.space/>']
 homepage = 'https://asylum.space/'
 edition = "2021"
+readme = "README.md"
 
 [package.metadata.docs.rs]
 targets = ['x86_64-unknown-linux-gnu']

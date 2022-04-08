@@ -1,9 +1,10 @@
 [package]
 name = "asylum-game-distribution"
 version = "0.0.1"
-authors = ["Parity Technologies <admin@parity.io>"]
+description = 'Asylum game distribution system'
+authors = ['horacio.lex@supercolony.net & Asylum <https://asylum.space/>']
+homepage = 'https://asylum.space/'
 edition = "2021"
-description = "FRAME NFT asset management pallet"
 readme = "README.md"
 
 [package.metadata.docs.rs]
