@@ -3,26 +3,35 @@ image: "paritytech/ci-linux:production"
 include:
   - template: 'Workflows/MergeRequest-Pipelines.gitlab-ci.yml'
 
+cache: &global_cache
+  key: $CI_COMMIT_REF_SLUG
+  paths:
+    - target/
+  policy: pull-push
+
 build:
   stage: build
   script:
+    - rustup show
     - cargo build
-  artifacts:
-    paths:
-      - target/
+  cache:
+    <<: *global_cache
+    policy: push
 
 test:
   stage: test
   script:
     - cargo test
-  dependencies:
-    - build
+  cache:
+    <<: *global_cache
+    policy: pull
   
 lint:
   stage: test
   script:
     - cargo +nightly fmt --all -- --check
     - cargo +nightly clippy
-  dependencies:
-    - build
+  cache:
+    <<: *global_cache
+    policy: pull
 
