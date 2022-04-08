@@ -24,10 +24,10 @@ pub mod pallet {
 	use rmrk_traits::*;
 	use sp_std::vec::Vec;
 
-	pub type BoundedInterpretation<T> =
+	pub type BoundedInterpretationOf<T> =
 		BoundedVec<u8, <T as pallet_rmrk_core::Config>::ResourceSymbolLimit>;
 
-	pub type InterpretationInfo<T> = ResourceInfo<BoundedInterpretation<T>, StringLimitOf<T>>;
+	pub type InterpretationInfoOf<T> = ResourceInfo<BoundedInterpretationOf<T>, StringLimitOf<T>>;
 
 	#[pallet::config]
 	pub trait Config:
@@ -74,7 +74,7 @@ pub mod pallet {
 			NMapKey<Twox64Concat, ItemTemplateId>,
 			NMapKey<Twox64Concat, ItemId>,
 			NMapKey<Twox64Concat, InterpretationTypeId>,
-			NMapKey<Twox64Concat, BoundedInterpretation<T>>,
+			NMapKey<Twox64Concat, BoundedInterpretationOf<T>>,
 		),
 		(),
 		OptionQuery,
@@ -88,9 +88,9 @@ pub mod pallet {
 		(
 			NMapKey<Blake2_128Concat, ItemTemplateId>,
 			NMapKey<Blake2_128Concat, InterpretationTypeId>,
-			NMapKey<Blake2_128Concat, BoundedInterpretation<T>>,
+			NMapKey<Blake2_128Concat, BoundedInterpretationOf<T>>,
 		),
-		InterpretationInfo<T>,
+		InterpretationInfoOf<T>,
 		OptionQuery,
 	>;
 
@@ -101,7 +101,7 @@ pub mod pallet {
 		_,
 		Twox64Concat,
 		ProposalId,
-		ProposalInfo<T::AccountId, BoundedInterpretation<T>, StringLimitOf<T>>,
+		ProposalInfo<T::AccountId, BoundedInterpretationOf<T>, StringLimitOf<T>>,
 		OptionQuery,
 	>;
 
@@ -204,13 +204,9 @@ pub mod pallet {
 	pub enum Error<T> {
 		InterpretationTypeAlreadyExist,
 		InterpretationTypeNotExist,
-		InterpretationAlreadyExist,
-		InterpretationNotExist,
-		TemplateAlreadyExist,
-		TemplateNotExist,
-		TemplateNotEmpty,
 		TemplateAlreadySupportThisType,
-		TemplateNotSupportThisType,
+		TemplateDoesntSupportThisType,
+		TemplateDoesntSupportThisInterpretations,
 		ProposalNotExist,
 		ProposalNotApproved,
 		ProposalInappropriateTemplate,
@@ -266,7 +262,7 @@ pub mod pallet {
 			metadata: StringLimitOf<T>,
 			max: Option<u32>,
 			interpretations: Vec<
-				Interpretation<StringLimitOf<T>, BoundedInterpretation<T>, StringLimitOf<T>>,
+				Interpretation<StringLimitOf<T>, BoundedInterpretationOf<T>, StringLimitOf<T>>,
 			>,
 		) -> DispatchResult {
 			let sender = ensure_signed(origin)?;
@@ -364,18 +360,13 @@ pub mod pallet {
 			let sender = ensure_signed(origin)?;
 			let (_, item_id) = pallet_rmrk_core::Pallet::<T>::nft_mint(
 				sender.clone(),
-				owner,
+				owner.clone(),
 				template_id,
 				Some(recipient.clone()),
 				None,
 				metadata,
 			)?;
-			pallet_uniques::Pallet::<T>::do_mint(
-				template_id,
-				item_id,
-				sender.clone(), // TODO: replace sender with owner
-				|_details| Ok(()),
-			)?;
+			pallet_uniques::Pallet::<T>::do_mint(template_id, item_id, owner, |_details| Ok(()))?;
 			Self::item_mint_from_template(sender, template_id, item_id)?;
 
 			Self::deposit_event(Event::ItemMinted { template_id, item_id, recipient });
@@ -451,13 +442,13 @@ pub mod pallet {
 		/// Emits `ItemUpdated`.
 		#[pallet::weight(10_000)]
 		#[transactional]
-		pub fn update_item(
+		pub fn accept_item_update(
 			origin: OriginFor<T>,
 			template_id: ItemTemplateId,
 			item_id: ItemId,
 		) -> DispatchResult {
 			let sender = ensure_signed(origin)?;
-			Self::item_update(sender, template_id, item_id)?;
+			Self::item_accept_update(sender, template_id, item_id)?;
 			Self::deposit_event(Event::ItemUpdated { template_id, item_id });
 			Ok(())
 		}
@@ -476,7 +467,7 @@ pub mod pallet {
 			origin: OriginFor<T>,
 			author: T::AccountId,
 			template_id: ItemTemplateId,
-			change_set: Vec<Change<BoundedInterpretation<T>, StringLimitOf<T>>>,
+			change_set: Vec<Change<BoundedInterpretationOf<T>, StringLimitOf<T>>>,
 		) -> DispatchResult {
 			ensure_signed(origin)?;
 			let proposal_id = Self::submit_proposal(author, template_id, change_set)?;
