@@ -29,7 +29,7 @@ The Asylum module provides functionality for templates and items management, inc
 * **Item issuance:** Creating a new item from the template.
 * **Item transfer:** The action of transferring an item from one account to another.
 * **Item burning:** The destruction of an item.
-* **Item update:** The action of updating the item's supported interpretations to the last version of the item's template. Only item's owner can update item.
+* **Item update:** The action of updating the item's supported interpretations to the last version of the item's template. Triggered automatically after template update, but the item's owner should accept all changes.
 * **Compatability with pallet-uniques and RMRK:** The interpretations are RMRK resources. Asylum NFTs can be used in pallet-uniques and RMRK contexts but with cut functionality.
 
 ### Goals
@@ -48,14 +48,14 @@ The Asylum core pallet is designed to make the following possible:
 
 ### Template dispatchables
 * `create_template`: Create new template.
-* `destroy_template`: Destroy template
-* `update_template`: Update template according to proposal
+* `destroy_template`: Destroy template.
+* `update_template`: Update template according to proposal and request all items update after this.
 
 ### Item dispatchables
 * `mint_item_from_template`: Mint new item from the template, i.e., mint item with the same set of supported interpretations as the template has.
 * `transfer_item`: Move an item from the sender account to another.
 * `burn_item`: Destroy an item.
-* `update_item`: Update item according to the newest version of the template.
+* `accept_item_update`: Accept all template's updates till the newest version of the template.
 
 ### DAO dispatchables
 * `submit_template_change_proposal`: Submit proposal with template changes.

@@ -3967,7 +3967,7 @@ dependencies = [
 [[package]]
 name = "pallet-rmrk-core"
 version = "0.0.1"
-source = "git+https://github.com/SupremaLex/rmrk-substrate.git?branch=feat/resource_removal#2d99359599263eaa7a0e8c927b908afc1d4bc26b"
+source = "git+https://github.com/SupremaLex/rmrk-substrate.git?branch=feat/resource_removal#80cd719c86323cd3e393497c27599b61fbf21561"
 dependencies = [
  "frame-benchmarking",
  "frame-support",
@@ -4891,7 +4891,7 @@ dependencies = [
 [[package]]
 name = "rmrk-traits"
 version = "0.0.1"
-source = "git+https://github.com/SupremaLex/rmrk-substrate.git?branch=feat/resource_removal#2d99359599263eaa7a0e8c927b908afc1d4bc26b"
+source = "git+https://github.com/SupremaLex/rmrk-substrate.git?branch=feat/resource_removal#80cd719c86323cd3e393497c27599b61fbf21561"
 dependencies = [
  "frame-benchmarking",
  "frame-support",

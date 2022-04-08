@@ -28,14 +28,14 @@ pub trait Item<AccountId, BoundedName, BoundedString> {
 		item_id: ItemId,
 	) -> Result<(ItemTemplateId, ItemId), DispatchError>; // ensure(item.owner = sender)
 
-	/// Update item's interpretation' set according to template
+	/// Accept item's update
 	///
 	/// # Arguments
 	///
 	/// * `sender` - transaction sender
 	/// * `template_name_or_id` - template name or template id
 	/// * `item_id` - id of the item to update
-	fn item_update(
+	fn item_accept_update(
 		sender: AccountId,
 		template_id: ItemTemplateId,
 		item_id: ItemId,

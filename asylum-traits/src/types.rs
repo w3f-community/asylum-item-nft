@@ -20,7 +20,11 @@ pub struct Interpretation<BoundedName, BoundedInterpretation, BoundedString> {
 
 #[derive(Encode, Decode, RuntimeDebug, TypeInfo, PartialEq, Eq, Clone)]
 pub enum Change<BoundedResource, BoundedString> {
-	AddOrUpdate {
+	Add {
+		interpretation_type: InterpretationTypeId,
+		interpretations: Vec<ResourceInfo<BoundedResource, BoundedString>>,
+	},
+	Modify {
 		interpretation_type: InterpretationTypeId,
 		interpretations: Vec<ResourceInfo<BoundedResource, BoundedString>>,
 	},

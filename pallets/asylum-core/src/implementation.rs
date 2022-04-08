@@ -6,7 +6,7 @@ use frame_support::{ensure, traits::tokens::nonfungibles::Inspect};
 use pallet_rmrk_core::StringLimitOf;
 use rmrk_traits::{Resource, ResourceInfo};
 use sp_runtime::{DispatchError, DispatchResult};
-use sp_std::{collections::btree_set::BTreeSet, vec::Vec};
+use sp_std::vec::Vec;
 
 use super::*;
 
@@ -43,7 +43,7 @@ where
 	) -> Result<(ItemTemplateId, ItemId), DispatchError> {
 		for (
 			(type_id, _),
-			ResourceInfo { id, pending: _, parts, base, src, metadata, slot, license, thumb },
+			ResourceInfo { id, parts, base, src, metadata, slot, license, thumb, .. },
 		) in TemplateIntepretations::<T>::iter_prefix((template_id,))
 		{
 			pallet_rmrk_core::Pallet::<T>::resource_add(
@@ -72,7 +72,7 @@ where
 		Ok((template_id, item_id))
 	}
 
-	fn item_update(
+	fn item_accept_update(
 		sender: T::AccountId,
 		template_id: ItemTemplateId,
 		item_id: ItemId,
@@ -81,45 +81,38 @@ where
 			pallet_uniques::Pallet::<T>::owner(template_id, item_id) == Some(sender.clone()),
 			Error::<T>::NoPermission
 		);
+		pallet_rmrk_core::Resources::<T>::iter_key_prefix((template_id, item_id)).try_for_each(
+			|interpretation_id| -> DispatchResult {
+				let interpretation = pallet_rmrk_core::Pallet::<T>::resources((
+					template_id,
+					item_id,
+					&interpretation_id,
+				))
+				.unwrap();
 
-		let current_item_state: BTreeSet<_> =
-			ItemIntepretations::<T>::iter_key_prefix((template_id, item_id)).collect();
-		let current_template_state: BTreeSet<_> =
-			TemplateIntepretations::<T>::iter_key_prefix((template_id,)).collect();
-		let types_to_remove = current_item_state.difference(&current_template_state);
-		for (type_id, interpretation_id) in types_to_remove {
-			ItemIntepretations::<T>::remove((template_id, item_id, type_id, interpretation_id));
-			pallet_rmrk_core::Pallet::<T>::resource_remove(
-				sender.clone(),
-				template_id,
-				item_id,
-				interpretation_id.clone(),
-			)?;
-		}
-		for (type_id, interpretation_id) in current_template_state {
-			let ResourceInfo { id, pending: _, parts, base, src, metadata, slot, license, thumb } =
-				TemplateIntepretations::<T>::get((template_id, type_id, interpretation_id.clone()))
-					.unwrap();
-			pallet_rmrk_core::Pallet::<T>::resource_add(
-				sender.clone(),
-				template_id,
-				item_id,
-				id.clone(),
-				base,
-				src,
-				metadata,
-				slot,
-				license,
-				thumb,
-				parts,
-			)?;
-			ItemIntepretations::<T>::insert((template_id, item_id, type_id, interpretation_id), ());
-		}
-		Ok(())
+				if interpretation.pending_removal {
+					pallet_rmrk_core::Pallet::<T>::accept_removal(
+						sender.clone(),
+						template_id,
+						item_id,
+						interpretation_id,
+					)?;
+				} else if interpretation.pending {
+					pallet_rmrk_core::Pallet::<T>::accept(
+						sender.clone(),
+						template_id,
+						item_id,
+						interpretation_id,
+					)?;
+				}
+				Ok(())
+			},
+		)
 	}
 }
 
-impl<T: Config> ItemTemplate<T::AccountId, StringLimitOf<T>, BoundedInterpretation<T>> for Pallet<T>
+impl<T: Config> ItemTemplate<T::AccountId, StringLimitOf<T>, BoundedInterpretationOf<T>>
+	for Pallet<T>
 where
 	T: pallet_uniques::Config<ClassId = ItemTemplateId, InstanceId = ItemId>
 		+ pallet_rmrk_core::Config,
@@ -127,7 +120,7 @@ where
 	fn template_create(
 		template_id: ItemTemplateId,
 		interpretations: Vec<
-			Interpretation<StringLimitOf<T>, BoundedInterpretation<T>, StringLimitOf<T>>,
+			Interpretation<StringLimitOf<T>, BoundedInterpretationOf<T>, StringLimitOf<T>>,
 		>,
 	) -> Result<ItemTemplateId, DispatchError> {
 		for Interpretation { type_name, interpretations } in interpretations {
@@ -136,8 +129,8 @@ where
 
 			interpretations.into_iter().for_each(|interpretation| {
 				TemplateIntepretations::<T>::insert(
-					(template_id, type_id, interpretation.id.clone()),
-					interpretation,
+					(template_id, type_id, &interpretation.id),
+					&interpretation,
 				);
 			});
 		}
@@ -150,7 +143,7 @@ where
 		template_id: ItemTemplateId,
 	) -> DispatchResult {
 		ensure!(
-			pallet_uniques::Pallet::<T>::class_owner(&template_id) == Some(sender),
+			pallet_uniques::Pallet::<T>::class_owner(&template_id) == Some(sender.clone()),
 			Error::<T>::NoPermission
 		);
 		let proposal_info = Proposals::<T>::get(proposal_id).ok_or(Error::<T>::ProposalNotExist)?;
@@ -160,39 +153,10 @@ where
 			Error::<T>::ProposalInappropriateTemplate
 		);
 
-		for change in proposal_info.change_set {
-			match change {
-				Change::AddOrUpdate { interpretation_type, interpretations } => {
-					interpretations.into_iter().for_each(|interpretation| {
-						TemplateIntepretations::<T>::insert(
-							(template_id, interpretation_type, interpretation.id.clone()),
-							interpretation,
-						);
-					});
-				},
-				Change::RemoveInterpretation { interpretation_type, interpretation_id } => {
-					ensure!(
-						TemplateIntepretations::<T>::contains_key((
-							template_id,
-							interpretation_type,
-							&interpretation_id
-						)),
-						Error::<T>::TemplateNotSupportThisType
-					);
-					TemplateIntepretations::<T>::remove((
-						template_id,
-						interpretation_type,
-						interpretation_id,
-					));
-				},
-				Change::RemoveInterpretationType { interpretation_type } => {
-					TemplateIntepretations::<T>::remove_prefix(
-						(template_id, interpretation_type),
-						None,
-					);
-				},
-			}
-		}
+		proposal_info
+			.change_set
+			.into_iter()
+			.try_for_each(|change| Self::apply_changes(sender.clone(), template_id, change))?;
 		Ok(())
 	}
 
@@ -202,7 +166,7 @@ where
 	}
 }
 
-impl<T: Config> Proposal<T::AccountId, BoundedInterpretation<T>, StringLimitOf<T>> for Pallet<T>
+impl<T: Config> Proposal<T::AccountId, BoundedInterpretationOf<T>, StringLimitOf<T>> for Pallet<T>
 where
 	T: pallet_uniques::Config<ClassId = ItemTemplateId, InstanceId = ItemId>
 		+ pallet_rmrk_core::Config,
@@ -210,7 +174,7 @@ where
 	fn submit_proposal(
 		author: T::AccountId,
 		template_id: ItemTemplateId,
-		change_set: Vec<Change<BoundedInterpretation<T>, StringLimitOf<T>>>,
+		change_set: Vec<Change<BoundedInterpretationOf<T>, StringLimitOf<T>>>,
 	) -> Result<ProposalId, DispatchError> {
 		let proposal_id = Self::get_next_proposal_id()?;
 		let proposal_info =
