@@ -7,16 +7,22 @@ build:
   stage: build
   script:
     - cargo build
+  artifacts:
+    paths:
+      - target/
 
 test:
   stage: test
   script:
     - cargo test
+  dependencies:
+    - build
   
 lint:
   stage: test
   script:
-    - cargo +nightly --version
     - cargo +nightly fmt --all -- --check
     - cargo +nightly clippy
+  dependencies:
+    - build
 
