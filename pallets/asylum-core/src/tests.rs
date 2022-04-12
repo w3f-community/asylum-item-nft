@@ -1,5 +1,5 @@
 use crate::{mock::*, Error};
-use asylum_traits::{Change, IntepretationTypeInfo, Interpretation};
+use asylum_traits::{Change, IntepretationInfo, IntepretationTypeInfo, Interpretation};
 use frame_support::{
 	assert_noop, assert_ok,
 	traits::{tokens::nonfungibles::Inspect, Get},
@@ -14,8 +14,8 @@ const PIXEL: &str = "pixel";
 const COMICS: &str = "comics";
 const ANIME: &str = "anime";
 
-const TYPES: &'static [&str] = &[TYPE_2D, TYPE_3D];
-const INTERPRETATIONS: &'static [&str] = &[PIXEL, COMICS, ANIME];
+const TYPES: &[&str] = &[TYPE_2D, TYPE_3D];
+const INTERPRETATIONS: &[&str] = &[PIXEL, COMICS, ANIME];
 
 const MOCK_HASH: &str = "ipfs://hash";
 
@@ -33,29 +33,18 @@ where
 	bounded(&(string1.to_owned() + string2))
 }
 
-fn resource<T, V>(
+fn interpretation<T, V>(
 	type_id: &str,
 	id: &str,
 	metadata: &str,
-) -> ResourceInfo<BoundedVec<u8, T>, BoundedVec<u8, V>>
+) -> IntepretationInfo<BoundedVec<u8, T>, BoundedVec<u8, V>>
 where
 	T: Get<u32>,
 	V: Get<u32>,
 {
 	let id = concat(type_id, id);
 	let metadata = bounded(metadata);
-	ResourceInfo {
-		id,
-		pending: false,
-		pending_removal: false,
-		base: None,
-		src: Some(metadata.clone()),
-		metadata: Some(metadata.clone()),
-		parts: None,
-		license: None,
-		slot: None,
-		thumb: None,
-	}
+	IntepretationInfo { id, src: Some(metadata.clone()), metadata: Some(metadata) }
 }
 
 fn create_types() {
@@ -63,14 +52,14 @@ fn create_types() {
 	let metadata = bounded(MOCK_HASH);
 	assert_ok!(AsylumCore::create_interpretation_type(
 		Origin::signed(ALICE),
-		name.clone(),
+		name,
 		metadata.clone()
 	));
 	let name = bounded(TYPE_3D);
 	assert_ok!(AsylumCore::create_interpretation_type(
 		Origin::signed(ALICE),
-		name.clone(),
-		metadata.clone()
+		name,
+		metadata
 	));
 }
 
@@ -85,17 +74,17 @@ fn create_template() {
 			Interpretation {
 				type_name: bounded(TYPE_2D),
 				interpretations: vec![
-					resource(TYPE_2D, PIXEL, MOCK_HASH),
-					resource(TYPE_2D, COMICS, MOCK_HASH),
-					resource(TYPE_2D, ANIME, MOCK_HASH)
+					interpretation(TYPE_2D, PIXEL, MOCK_HASH),
+					interpretation(TYPE_2D, COMICS, MOCK_HASH),
+					interpretation(TYPE_2D, ANIME, MOCK_HASH)
 				]
 			},
 			Interpretation {
 				type_name: bounded(TYPE_3D),
 				interpretations: vec![
-					resource(TYPE_3D, PIXEL, MOCK_HASH),
-					resource(TYPE_3D, COMICS, MOCK_HASH),
-					resource(TYPE_3D, ANIME, MOCK_HASH)
+					interpretation(TYPE_3D, PIXEL, MOCK_HASH),
+					interpretation(TYPE_3D, COMICS, MOCK_HASH),
+					interpretation(TYPE_3D, ANIME, MOCK_HASH)
 				]
 			}
 		],
@@ -110,6 +99,23 @@ fn mint_item_from_template() {
 		0,
 		bounded(MOCK_HASH)
 	));
+}
+
+fn to_resource<BoundedInterpretationId, BoundedString>(
+	interpretation: IntepretationInfo<BoundedInterpretationId, BoundedString>,
+) -> ResourceInfo<BoundedInterpretationId, BoundedString> {
+	ResourceInfo {
+		id: interpretation.id,
+		pending: false,
+		pending_removal: false,
+		parts: None,
+		base: None,
+		src: interpretation.src,
+		metadata: interpretation.metadata,
+		slot: None,
+		license: None,
+		thumb: None,
+	}
 }
 
 #[test]
@@ -143,8 +149,8 @@ fn should_fail_interpretation_type_1() {
 		assert_noop!(
 			AsylumCore::create_interpretation_type(
 				Origin::signed(ALICE),
-				name.clone(),
-				metadata.clone()
+				name,
+				metadata
 			),
 			Error::<Test>::InterpretationTypeAlreadyExist
 		);
@@ -164,7 +170,7 @@ fn should_create_template() {
 						type_id,
 						concat(type_name, interpretation_id)
 					)),
-					Some(resource(type_name, interpretation_id, MOCK_HASH))
+					Some(interpretation(type_name, interpretation_id, MOCK_HASH))
 				);
 			}
 		}
@@ -185,8 +191,8 @@ fn should_fail_create_template_1() {
 				vec![Interpretation {
 					type_name: bounded("SomeNonexistentType"),
 					interpretations: vec![
-						resource(TYPE_2D, PIXEL, MOCK_HASH),
-						resource(TYPE_2D, COMICS, MOCK_HASH)
+						interpretation(TYPE_2D, PIXEL, MOCK_HASH),
+						interpretation(TYPE_2D, COMICS, MOCK_HASH)
 					]
 				}]
 			),
@@ -273,12 +279,12 @@ fn should_mint_item_from_template() {
 				assert_eq!(AsylumCore::item_interpretations((0, 0, type_id, &res_id)), Some(()));
 				assert_eq!(
 					RmrkCore::resources((0, 0, &res_id)),
-					Some(resource(type_name, interpretation_id, MOCK_HASH))
+					Some(to_resource(interpretation(type_name, interpretation_id, MOCK_HASH)))
 				);
 				assert_eq!(AsylumCore::item_interpretations((0, 1, type_id, &res_id)), Some(()));
 				assert_eq!(
 					RmrkCore::resources((0, 1, &res_id)),
-					Some(resource(type_name, interpretation_id, MOCK_HASH))
+					Some(to_resource(interpretation(type_name, interpretation_id, MOCK_HASH)))
 				);
 			}
 		}
@@ -512,11 +518,11 @@ fn should_update_template_and_item() {
 		));
 		let modify_interpretation = Change::Modify {
 			interpretation_type: 1,
-			interpretations: vec![resource(TYPE_3D, PIXEL, "updated_metadata")],
+			interpretations: vec![interpretation(TYPE_3D, PIXEL, "updated_metadata")],
 		};
 		let add_new_type = Change::Add {
 			interpretation_type: 2,
-			interpretations: vec![resource("NEW", PIXEL, MOCK_HASH)],
+			interpretations: vec![interpretation("NEW", PIXEL, MOCK_HASH)],
 		};
 		assert_ok!(AsylumCore::submit_template_change_proposal(
 			Origin::signed(ALICE),
@@ -527,21 +533,21 @@ fn should_update_template_and_item() {
 		assert_ok!(AsylumCore::update_template(Origin::signed(ALICE), 0, 0));
 		assert_eq!(
 			AsylumCore::template_interpretations((0, 1, concat(TYPE_3D, PIXEL))),
-			Some(resource(TYPE_3D, PIXEL, "updated_metadata"))
+			Some(interpretation(TYPE_3D, PIXEL, "updated_metadata"))
 		);
 		assert_eq!(
 			AsylumCore::template_interpretations((0, 2, concat("NEW", PIXEL))),
-			Some(resource("NEW", PIXEL, MOCK_HASH))
+			Some(interpretation("NEW", PIXEL, MOCK_HASH))
 		);
 
 		assert_eq!(AsylumCore::item_interpretations((0, 0, 1, concat(TYPE_3D, PIXEL))), Some(()));
 		assert_eq!(
 			RmrkCore::resources((0, 0, concat(TYPE_3D, PIXEL))),
-			Some(resource(TYPE_3D, PIXEL, "updated_metadata"))
+			Some(to_resource(interpretation(TYPE_3D, PIXEL, "updated_metadata")))
 		);
 		assert_eq!(
 			RmrkCore::resources((0, 0, concat("NEW", PIXEL))),
-			Some(resource("NEW", PIXEL, MOCK_HASH))
+			Some(to_resource(interpretation("NEW", PIXEL, MOCK_HASH)))
 		);
 
 		let remove_interpretation = Change::RemoveInterpretation {
@@ -592,11 +598,11 @@ fn should_update_template_and_item_pending() {
 		));
 		let modify_interpretation = Change::Modify {
 			interpretation_type: 1,
-			interpretations: vec![resource(TYPE_3D, PIXEL, "updated_metadata")],
+			interpretations: vec![interpretation(TYPE_3D, PIXEL, "updated_metadata")],
 		};
 		let add_new_type = Change::Add {
 			interpretation_type: 2,
-			interpretations: vec![resource("NEW", PIXEL, MOCK_HASH)],
+			interpretations: vec![interpretation("NEW", PIXEL, MOCK_HASH)],
 		};
 		assert_ok!(AsylumCore::submit_template_change_proposal(
 			Origin::signed(ALICE),
@@ -611,21 +617,21 @@ fn should_update_template_and_item_pending() {
 		assert_ok!(AsylumCore::update_template(Origin::signed(ALICE), 0, 0));
 		assert_eq!(
 			AsylumCore::template_interpretations((0, 1, concat(TYPE_3D, PIXEL))),
-			Some(resource(TYPE_3D, PIXEL, "updated_metadata"))
+			Some(interpretation(TYPE_3D, PIXEL, "updated_metadata"))
 		);
 		assert_eq!(
 			AsylumCore::template_interpretations((0, 2, concat("NEW", PIXEL))),
-			Some(resource("NEW", PIXEL, MOCK_HASH))
+			Some(interpretation("NEW", PIXEL, MOCK_HASH))
 		);
 		assert_ok!(AsylumCore::accept_item_update(Origin::signed(BOB), 0, 0));
 		assert_eq!(AsylumCore::item_interpretations((0, 0, 1, concat(TYPE_3D, PIXEL))), Some(()));
 		assert_eq!(
 			RmrkCore::resources((0, 0, concat(TYPE_3D, PIXEL))),
-			Some(resource(TYPE_3D, PIXEL, "updated_metadata"))
+			Some(to_resource(interpretation(TYPE_3D, PIXEL, "updated_metadata")))
 		);
 		assert_eq!(
 			RmrkCore::resources((0, 0, concat("NEW", PIXEL))),
-			Some(resource("NEW", PIXEL, MOCK_HASH))
+			Some(to_resource(interpretation("NEW", PIXEL, MOCK_HASH)))
 		);
 	});
 }
@@ -641,11 +647,11 @@ fn should_fail_update_template() {
 		let remove_type = Change::RemoveInterpretationType { interpretation_type: 0 };
 		let update_removed_interpretation = Change::Modify {
 			interpretation_type: 1,
-			interpretations: vec![resource(TYPE_3D, PIXEL, "updated_metadata")],
+			interpretations: vec![interpretation(TYPE_3D, PIXEL, "updated_metadata")],
 		};
 		let update_removed_type = Change::Modify {
 			interpretation_type: 0,
-			interpretations: vec![resource(TYPE_2D, PIXEL, "updated_metadata")],
+			interpretations: vec![interpretation(TYPE_2D, PIXEL, "updated_metadata")],
 		};
 
 		assert_ok!(AsylumCore::submit_template_change_proposal(
@@ -654,7 +660,10 @@ fn should_fail_update_template() {
 			0,
 			vec![remove_interpretation, update_removed_interpretation],
 		));
-		assert_noop!(AsylumCore::update_template(Origin::signed(ALICE), 0, 0), Error::<Test>::TemplateDoesntSupportThisInterpretations);
+		assert_noop!(
+			AsylumCore::update_template(Origin::signed(ALICE), 0, 0),
+			Error::<Test>::TemplateDoesntSupportThisInterpretations
+		);
 
 		assert_ok!(AsylumCore::submit_template_change_proposal(
 			Origin::signed(ALICE),
@@ -662,6 +671,9 @@ fn should_fail_update_template() {
 			0,
 			vec![remove_type, update_removed_type],
 		));
-		assert_noop!(AsylumCore::update_template(Origin::signed(ALICE), 0, 1), Error::<Test>::TemplateDoesntSupportThisInterpretations);
+		assert_noop!(
+			AsylumCore::update_template(Origin::signed(ALICE), 0, 1),
+			Error::<Test>::TemplateDoesntSupportThisInterpretations
+		);
 	});
 }

@@ -139,7 +139,7 @@ impl Default for ExtBuilder {
 
 impl ExtBuilder {
 	pub fn build(self) -> sp_io::TestExternalities {
-		let mut storage = system::GenesisConfig::default().build_storage::<Test>().unwrap().into();
+		let mut storage = system::GenesisConfig::default().build_storage::<Test>().unwrap();
 
 		balances::GenesisConfig::<Test> {
 			balances: vec![(ALICE, 20_000_000), (BOB, 15_000), (CHARLIE, 150_000)],

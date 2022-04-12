@@ -1,4 +1,4 @@
-use asylum_traits::{primitives::*, Change};
+use asylum_traits::{primitives::*, Change, IntepretationInfo};
 use frame_support::{dispatch::DispatchResult, ensure};
 use pallet_rmrk_core::StringLimitOf;
 use rmrk_traits::Resource;
@@ -6,7 +6,8 @@ use sp_std::vec::Vec;
 
 use super::*;
 
-pub type ChangeOf<T> = Change<BoundedInterpretationOf<T>, StringLimitOf<T>>;
+pub type ChangeOf<T> = Change<BoundedResourceOf<T>, StringLimitOf<T>>;
+pub type IntepretationInfoOf<T> = IntepretationInfo<BoundedResourceOf<T>, StringLimitOf<T>>;
 
 impl<T: Config> Pallet<T>
 where
@@ -45,19 +46,17 @@ where
 					interpretations,
 				),
 			Change::Modify { interpretation_type, interpretations } => {
-				interpretations.iter().try_for_each(
-					|interpretation| -> DispatchResult {
-						ensure!(
-							TemplateIntepretations::<T>::contains_key((
-								template_id,
-								interpretation_type,
-								&interpretation.id
-							)),
-							Error::<T>::TemplateDoesntSupportThisInterpretations
-						);
-						Ok(())
-					},
-				)?;
+				interpretations.iter().try_for_each(|interpretation| -> DispatchResult {
+					ensure!(
+						TemplateIntepretations::<T>::contains_key((
+							template_id,
+							interpretation_type,
+							&interpretation.id
+						)),
+						Error::<T>::TemplateDoesntSupportThisInterpretations
+					);
+					Ok(())
+				})?;
 				Self::add_or_modify_interpretation(
 					sender,
 					template_id,
@@ -81,47 +80,45 @@ where
 		sender: T::AccountId,
 		template_id: ItemTemplateId,
 		interpretation_type: InterpretationTypeId,
-		interpretations: Vec<InterpretationInfoOf<T>>,
+		interpretations: Vec<IntepretationInfoOf<T>>,
 	) -> DispatchResult {
-		interpretations.into_iter().try_for_each(
-			|interpretation| -> DispatchResult {
-				TemplateIntepretations::<T>::insert(
-					(template_id, interpretation_type, interpretation.id.clone()),
-					interpretation.clone(),
-				);
-				pallet_rmrk_core::Nfts::<T>::iter_key_prefix(template_id).try_for_each(
-					|item_id| -> DispatchResult {
-						let res = interpretation.clone();
-						pallet_rmrk_core::Pallet::<T>::resource_add(
-							sender.clone(),
-							template_id,
-							item_id,
-							res.id.clone(),
-							res.base,
-							res.src,
-							res.metadata,
-							res.slot,
-							res.license,
-							res.thumb,
-							res.parts,
-						)?;
-						ItemIntepretations::<T>::insert(
-							(template_id, item_id, interpretation_type, res.id),
-							(),
-						);
-						Ok(())
-					},
-				)?;
-				Ok(())
-			},
-		)
+		interpretations.into_iter().try_for_each(|interpretation| -> DispatchResult {
+			TemplateIntepretations::<T>::insert(
+				(template_id, interpretation_type, interpretation.id.clone()),
+				interpretation.clone(),
+			);
+			pallet_rmrk_core::Nfts::<T>::iter_key_prefix(template_id).try_for_each(
+				|item_id| -> DispatchResult {
+					let res = interpretation.clone();
+					pallet_rmrk_core::Pallet::<T>::resource_add(
+						sender.clone(),
+						template_id,
+						item_id,
+						res.id.clone(),
+						None,
+						res.src,
+						res.metadata,
+						None,
+						None,
+						None,
+						None,
+					)?;
+					ItemIntepretations::<T>::insert(
+						(template_id, item_id, interpretation_type, res.id),
+						(),
+					);
+					Ok(())
+				},
+			)?;
+			Ok(())
+		})
 	}
 
 	pub fn remove_interpretation(
 		sender: T::AccountId,
 		template_id: ItemTemplateId,
 		interpretation_type: InterpretationTypeId,
-		interpretation_id: BoundedInterpretationOf<T>,
+		interpretation_id: BoundedResourceOf<T>,
 	) -> DispatchResult {
 		ensure!(
 			TemplateIntepretations::<T>::contains_key((

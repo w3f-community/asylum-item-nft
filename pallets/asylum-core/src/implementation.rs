@@ -4,7 +4,7 @@ use asylum_traits::{
 };
 use frame_support::{ensure, traits::tokens::nonfungibles::Inspect};
 use pallet_rmrk_core::StringLimitOf;
-use rmrk_traits::{Resource, ResourceInfo};
+use rmrk_traits::Resource;
 use sp_runtime::{DispatchError, DispatchResult};
 use sp_std::vec::Vec;
 
@@ -41,23 +41,21 @@ where
 		template_id: ItemTemplateId,
 		item_id: ItemId,
 	) -> Result<(ItemTemplateId, ItemId), DispatchError> {
-		for (
-			(type_id, _),
-			ResourceInfo { id, parts, base, src, metadata, slot, license, thumb, .. },
-		) in TemplateIntepretations::<T>::iter_prefix((template_id,))
+		for ((type_id, _), IntepretationInfo { id, src, metadata }) in
+			TemplateIntepretations::<T>::iter_prefix((template_id,))
 		{
 			pallet_rmrk_core::Pallet::<T>::resource_add(
 				sender.clone(),
 				template_id,
 				item_id,
 				id.clone(),
-				base,
+				None,
 				src,
 				metadata,
-				slot,
-				license,
-				thumb,
-				parts,
+				None,
+				None,
+				None,
+				None,
 			)?;
 			ItemIntepretations::<T>::insert((template_id, item_id, type_id, &id), ());
 		}
@@ -111,8 +109,7 @@ where
 	}
 }
 
-impl<T: Config> ItemTemplate<T::AccountId, StringLimitOf<T>, BoundedInterpretationOf<T>>
-	for Pallet<T>
+impl<T: Config> ItemTemplate<T::AccountId, StringLimitOf<T>, BoundedResourceOf<T>> for Pallet<T>
 where
 	T: pallet_uniques::Config<ClassId = ItemTemplateId, InstanceId = ItemId>
 		+ pallet_rmrk_core::Config,
@@ -120,7 +117,7 @@ where
 	fn template_create(
 		template_id: ItemTemplateId,
 		interpretations: Vec<
-			Interpretation<StringLimitOf<T>, BoundedInterpretationOf<T>, StringLimitOf<T>>,
+			Interpretation<StringLimitOf<T>, BoundedResourceOf<T>, StringLimitOf<T>>,
 		>,
 	) -> Result<ItemTemplateId, DispatchError> {
 		for Interpretation { type_name, interpretations } in interpretations {
@@ -166,7 +163,7 @@ where
 	}
 }
 
-impl<T: Config> Proposal<T::AccountId, BoundedInterpretationOf<T>, StringLimitOf<T>> for Pallet<T>
+impl<T: Config> Proposal<T::AccountId, BoundedResourceOf<T>, StringLimitOf<T>> for Pallet<T>
 where
 	T: pallet_uniques::Config<ClassId = ItemTemplateId, InstanceId = ItemId>
 		+ pallet_rmrk_core::Config,
@@ -174,7 +171,7 @@ where
 	fn submit_proposal(
 		author: T::AccountId,
 		template_id: ItemTemplateId,
-		change_set: Vec<Change<BoundedInterpretationOf<T>, StringLimitOf<T>>>,
+		change_set: Vec<Change<BoundedResourceOf<T>, StringLimitOf<T>>>,
 	) -> Result<ProposalId, DispatchError> {
 		let proposal_id = Self::get_next_proposal_id()?;
 		let proposal_info =

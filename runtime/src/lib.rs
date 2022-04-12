@@ -320,6 +320,16 @@ impl asylum_core::Config for Runtime {
 	type Event = Event;
 }
 
+impl asylum_game_distribution::Config for Runtime {
+	type Event = Event;
+	type GameId = u32;
+	type TicketId = u32;
+	type Currency = Balances;
+	type StringLimit = ConstU32<50>;
+	type KeyLimit = ConstU32<50>;
+	type ValueLimit = ConstU32<50>;
+}
+
 // Create the runtime by composing the FRAME pallets that were previously configured.
 construct_runtime!(
 	pub enum Runtime where
@@ -338,7 +348,8 @@ construct_runtime!(
 		// Include the custom logic from the pallet-template in the runtime.
 		Uniques: pallet_uniques,
 		RmrkCore: pallet_rmrk_core,
-		Asylum: asylum_core
+		AsylumCore: asylum_core,
+		AsylumGDS: asylum_game_distribution,
 	}
 );
 
