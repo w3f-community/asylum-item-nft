@@ -502,3 +502,21 @@ fn cancel_approval_works_with_admin() {
 		);
 	});
 }
+
+#[test]
+fn templates_support() {
+	new_test_ext().execute_with(|| {
+		Balances::make_free_balance_be(&2, 1000);
+		assert_ok!(GameDistribution::create_game(Origin::signed(1), 0, 1, 1000));
+		assert_ok!(Uniques::create(Origin::signed(2), 101, 2));
+		assert_ok!(Uniques::create(Origin::signed(2), 102, 2));
+		assert_noop!(
+			GameDistribution::add_template_support(Origin::signed(1), 0, 100),
+			Error::<Test>::Unknown
+		);
+		assert_ok!(GameDistribution::add_template_support(Origin::signed(1), 0, 101));
+		assert_ok!(GameDistribution::add_template_support(Origin::signed(1), 0, 102));
+		assert_ok!(GameDistribution::remove_template_support(Origin::signed(1), 0, 101));
+		assert_ok!(GameDistribution::remove_template_support(Origin::signed(1), 0, 102));
+	});
+}

@@ -163,9 +163,11 @@ dependencies = [
 name = "asylum-game-distribution"
 version = "0.0.1"
 dependencies = [
+ "asylum-traits",
  "frame-support",
  "frame-system",
  "pallet-balances",
+ "pallet-uniques",
  "parity-scale-codec",
  "scale-info",
  "sp-core",

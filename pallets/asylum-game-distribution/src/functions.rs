@@ -1,6 +1,7 @@
 use super::*;
 use frame_support::ensure;
 use sp_runtime::{DispatchError, DispatchResult};
+use sp_std::collections::btree_set::BTreeSet;
 
 impl<T: Config> Pallet<T> {
 	pub fn do_transfer(
@@ -52,6 +53,7 @@ impl<T: Config> Pallet<T> {
 				instance_metadatas: 0,
 				attributes: 0,
 				is_frozen: false,
+				templates: BTreeSet::new(),
 			},
 		);
 
