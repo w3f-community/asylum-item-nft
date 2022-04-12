@@ -56,11 +56,7 @@ fn create_types() {
 		metadata.clone()
 	));
 	let name = bounded(TYPE_3D);
-	assert_ok!(AsylumCore::create_interpretation_type(
-		Origin::signed(ALICE),
-		name,
-		metadata
-	));
+	assert_ok!(AsylumCore::create_interpretation_type(Origin::signed(ALICE), name, metadata));
 }
 
 fn create_template() {
@@ -147,11 +143,7 @@ fn should_fail_interpretation_type_1() {
 			metadata.clone()
 		));
 		assert_noop!(
-			AsylumCore::create_interpretation_type(
-				Origin::signed(ALICE),
-				name,
-				metadata
-			),
+			AsylumCore::create_interpretation_type(Origin::signed(ALICE), name, metadata),
 			Error::<Test>::InterpretationTypeAlreadyExist
 		);
 	});

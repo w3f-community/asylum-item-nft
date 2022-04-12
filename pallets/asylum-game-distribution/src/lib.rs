@@ -10,8 +10,9 @@ mod functions;
 mod impl_nonfungibles;
 mod types;
 
+use asylum_traits::primitives::ItemTemplateId;
 use codec::{Decode, Encode, HasCompact};
-use frame_support::traits::{Currency, ExistenceRequirement};
+use frame_support::traits::{tokens::nonfungibles::Inspect, Currency, ExistenceRequirement};
 use frame_system::Config as SystemConfig;
 use sp_runtime::{
 	traits::{Saturating, StaticLookup},
@@ -42,6 +43,8 @@ pub mod pallet {
 		/// The overarching event type.
 		type Event: From<Event<Self>> + IsType<<Self as frame_system::Config>::Event>;
 
+		type Uniques: Inspect<Self::AccountId, ClassId = ItemTemplateId>;
+
 		/// Identifier for the class of asset.
 		type GameId: Member + Parameter + Default + Copy + HasCompact;
 
@@ -65,8 +68,7 @@ pub mod pallet {
 
 	#[pallet::storage]
 	/// Details of an asset class.
-	pub(super) type Game<T: Config> =
-		StorageMap<_, Blake2_128Concat, T::GameId, GameDetails<T::AccountId, BalanceOf<T>>>;
+	pub(super) type Game<T: Config> = StorageMap<_, Blake2_128Concat, T::GameId, GameDetailsFor<T>>;
 
 	#[pallet::storage]
 	/// The assets held by any given account; set out this way so that assets owned by a single
@@ -103,7 +105,7 @@ pub mod pallet {
 		T::GameId,
 		Blake2_128Concat,
 		T::TicketId,
-		TicketDetails<T::AccountId>,
+		TicketDetailsFor<T>,
 		OptionQuery,
 	>;
 
@@ -226,6 +228,14 @@ pub mod pallet {
 			game: T::GameId,
 			maybe_ticket: Option<T::TicketId>,
 			key: BoundedVec<u8, T::KeyLimit>,
+		},
+		GameAddTemplateSupport {
+			game: T::GameId,
+			template_id: ItemTemplateId,
+		},
+		GameRemoveTemplateSupport {
+			game: T::GameId,
+			template_id: ItemTemplateId,
 		},
 	}
 
@@ -661,6 +671,41 @@ pub mod pallet {
 			GameMetadataOf::<T>::try_mutate_exists(game, |metadata| {
 				metadata.take();
 				Self::deposit_event(Event::GameMetadataCleared { game });
+				Ok(())
+			})
+		}
+
+		#[pallet::weight(10_000)]
+		pub fn add_template_support(
+			origin: OriginFor<T>,
+			#[pallet::compact] game: T::GameId,
+			#[pallet::compact] template_id: ItemTemplateId,
+		) -> DispatchResult {
+			let origin = ensure_signed(origin)?;
+
+			Game::<T>::try_mutate_exists(game, |maybe_details| {
+				let details = maybe_details.as_mut().ok_or(Error::<T>::Unknown)?;
+				ensure!(origin == details.owner, Error::<T>::NoPermission);
+				ensure!(T::Uniques::class_owner(&template_id).is_some(), Error::<T>::Unknown);
+				details.templates.insert(template_id);
+				Self::deposit_event(Event::GameAddTemplateSupport { game, template_id });
+				Ok(())
+			})
+		}
+
+		#[pallet::weight(10_000)]
+		pub fn remove_template_support(
+			origin: OriginFor<T>,
+			#[pallet::compact] game: T::GameId,
+			#[pallet::compact] template_id: ItemTemplateId,
+		) -> DispatchResult {
+			let origin = ensure_signed(origin)?;
+
+			Game::<T>::try_mutate_exists(game, |maybe_details| {
+				let details = maybe_details.as_mut().ok_or(Error::<T>::Unknown)?;
+				ensure!(origin == details.owner, Error::<T>::NoPermission);
+				details.templates.remove(&template_id);
+				Self::deposit_event(Event::GameRemoveTemplateSupport { game, template_id });
 				Ok(())
 			})
 		}

@@ -322,6 +322,7 @@ impl asylum_core::Config for Runtime {
 
 impl asylum_game_distribution::Config for Runtime {
 	type Event = Event;
+	type Uniques = Uniques;
 	type GameId = u32;
 	type TicketId = u32;
 	type Currency = Balances;

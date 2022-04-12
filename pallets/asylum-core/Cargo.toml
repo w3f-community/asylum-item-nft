@@ -28,6 +28,12 @@ git = 'https://github.com/rmrk-team/rmrk-substrate.git'
 package = 'pallet-rmrk-core'
 version = '0.0.1'
 
+[dependencies.pallet-uniques]
+default-features = false
+git = 'https://github.com/paritytech/substrate.git'
+branch = "polkadot-v0.9.17"
+version = '4.0.0-dev'
+
 [dependencies.codec]
 default-features = false
 features = ['derive']
@@ -83,12 +89,6 @@ branch = "polkadot-v0.9.17"
 version = '5.0.0'
 
 [dev-dependencies.pallet-balances]
-default-features = false
-git = 'https://github.com/paritytech/substrate.git'
-branch = "polkadot-v0.9.17"
-version = '4.0.0-dev'
-
-[dependencies.pallet-uniques]
 default-features = false
 git = 'https://github.com/paritytech/substrate.git'
 branch = "polkadot-v0.9.17"

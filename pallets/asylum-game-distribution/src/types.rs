@@ -1,12 +1,15 @@
 use super::*;
+use asylum_traits::primitives::ItemTemplateId;
 use frame_support::{traits::Get, BoundedVec};
 use scale_info::TypeInfo;
+use sp_std::collections::btree_set::BTreeSet;
 
-pub(super) type GameDetailsFor<T> = GameDetails<<T as SystemConfig>::AccountId, BalanceOf<T>>;
+pub(super) type GameDetailsFor<T> =
+	GameDetails<<T as SystemConfig>::AccountId, BalanceOf<T>, ItemTemplateId>;
 pub(super) type TicketDetailsFor<T> = TicketDetails<<T as SystemConfig>::AccountId>;
 
 #[derive(Clone, Encode, Decode, Eq, PartialEq, RuntimeDebug, TypeInfo)]
-pub struct GameDetails<AccountId, Balance> {
+pub struct GameDetails<AccountId, Balance, TemplateId> {
 	/// Can change `owner`, `issuer`, `freezer` and `admin` accounts.
 	pub(super) owner: AccountId,
 	/// Can mint tokens.
@@ -25,6 +28,8 @@ pub struct GameDetails<AccountId, Balance> {
 	pub(super) attributes: u32,
 	/// Whether the asset is frozen for non-admin transfers.
 	pub(super) is_frozen: bool,
+	/// Set of supported templates
+	pub(super) templates: BTreeSet<TemplateId>,
 }
 
 /// Witness data for the destroy transactions.
@@ -41,7 +46,7 @@ pub struct DestroyWitness {
 	pub attributes: u32,
 }
 
-impl<AccountId, Balance> GameDetails<AccountId, Balance> {
+impl<AccountId, Balance, ItemTemplateId> GameDetails<AccountId, Balance, ItemTemplateId> {
 	pub fn destroy_witness(&self) -> DestroyWitness {
 		DestroyWitness {
 			instances: self.instances,
