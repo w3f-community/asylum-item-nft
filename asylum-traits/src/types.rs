@@ -1,5 +1,4 @@
 use codec::{Decode, Encode};
-use rmrk_traits::ResourceInfo;
 use scale_info::TypeInfo;
 use sp_runtime::RuntimeDebug;
 use sp_std::vec::Vec;
@@ -12,21 +11,28 @@ pub struct IntepretationTypeInfo<BoundedString> {
 	pub metadata: BoundedString,
 }
 
+#[derive(Encode, Decode, Default, RuntimeDebug, TypeInfo, PartialEq, Eq, Clone)]
+pub struct IntepretationInfo<BoundedInterpretationId, BoundedString> {
+	pub id: BoundedInterpretationId,
+	pub src: Option<BoundedString>,
+	pub metadata: Option<BoundedString>,
+}
+
 #[derive(Encode, Decode, RuntimeDebug, TypeInfo, PartialEq, Eq, Clone)]
 pub struct Interpretation<BoundedName, BoundedInterpretation, BoundedString> {
 	pub type_name: BoundedName,
-	pub interpretations: Vec<ResourceInfo<BoundedInterpretation, BoundedString>>,
+	pub interpretations: Vec<IntepretationInfo<BoundedInterpretation, BoundedString>>,
 }
 
 #[derive(Encode, Decode, RuntimeDebug, TypeInfo, PartialEq, Eq, Clone)]
 pub enum Change<BoundedResource, BoundedString> {
 	Add {
 		interpretation_type: InterpretationTypeId,
-		interpretations: Vec<ResourceInfo<BoundedResource, BoundedString>>,
+		interpretations: Vec<IntepretationInfo<BoundedResource, BoundedString>>,
 	},
 	Modify {
 		interpretation_type: InterpretationTypeId,
-		interpretations: Vec<ResourceInfo<BoundedResource, BoundedString>>,
+		interpretations: Vec<IntepretationInfo<BoundedResource, BoundedString>>,
 	},
 	RemoveInterpretation {
 		interpretation_type: InterpretationTypeId,

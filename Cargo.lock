@@ -3658,6 +3658,7 @@ name = "node-asylum-runtime"
 version = "4.0.0-dev"
 dependencies = [
  "asylum-core",
+ "asylum-game-distribution",
  "frame-benchmarking",
  "frame-executive",
  "frame-support",
@@ -3967,7 +3968,7 @@ dependencies = [
 [[package]]
 name = "pallet-rmrk-core"
 version = "0.0.1"
-source = "git+https://github.com/SupremaLex/rmrk-substrate.git?branch=feat/resource_removal#80cd719c86323cd3e393497c27599b61fbf21561"
+source = "git+https://github.com/rmrk-team/rmrk-substrate.git#27f9e27b784d223b9e4ec05dc9817293c6b8e4d6"
 dependencies = [
  "frame-benchmarking",
  "frame-support",
@@ -4891,7 +4892,7 @@ dependencies = [
 [[package]]
 name = "rmrk-traits"
 version = "0.0.1"
-source = "git+https://github.com/SupremaLex/rmrk-substrate.git?branch=feat/resource_removal#80cd719c86323cd3e393497c27599b61fbf21561"
+source = "git+https://github.com/rmrk-team/rmrk-substrate.git#27f9e27b784d223b9e4ec05dc9817293c6b8e4d6"
 dependencies = [
  "frame-benchmarking",
  "frame-support",

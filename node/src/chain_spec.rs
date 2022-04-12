@@ -1,5 +1,5 @@
 use node_asylum_runtime::{
-	AccountId, AsylumConfig, AuraConfig, BalancesConfig, GenesisConfig, GrandpaConfig, Signature,
+	AccountId, AsylumCoreConfig, AuraConfig, BalancesConfig, GenesisConfig, GrandpaConfig, Signature,
 	SudoConfig, SystemConfig, WASM_BINARY,
 };
 use sc_service::ChainType;
@@ -154,7 +154,7 @@ fn testnet_genesis(
 			key: Some(root_key),
 		},
 		transaction_payment: Default::default(),
-		asylum: AsylumConfig::new(vec![(
+		asylum_core: AsylumCoreConfig::new(vec![(
 			"type_2D".to_string(),
 			"ipfs://type_2D_metadata_hash".to_string(),
 		)]),

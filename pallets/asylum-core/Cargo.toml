@@ -18,16 +18,14 @@ path = '../../asylum-traits'
 
 [dependencies.rmrk-traits]
 default-features = false
-git = 'https://github.com/SupremaLex/rmrk-substrate.git'
-branch = "feat/resource_removal"
+git = 'https://github.com/rmrk-team/rmrk-substrate.git'
 package = 'rmrk-traits'
 version = '0.0.1'
 
 [dependencies.pallet-rmrk-core]
 default-features = false
-git = 'https://github.com/SupremaLex/rmrk-substrate.git'
+git = 'https://github.com/rmrk-team/rmrk-substrate.git'
 package = 'pallet-rmrk-core'
-branch = "feat/resource_removal"
 version = '0.0.1'
 
 [dependencies.codec]

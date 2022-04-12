@@ -15,8 +15,8 @@ mod tests;
 pub mod pallet {
 	use asylum_traits::{
 		primitives::{InterpretationId, InterpretationTypeId, ItemId, ItemTemplateId, ProposalId},
-		Change, IntepretationTypeInfo, Interpretable, Interpretation, Item, ItemTemplate, Proposal,
-		ProposalInfo,
+		Change, IntepretationInfo, IntepretationTypeInfo, Interpretable, Interpretation, Item,
+		ItemTemplate, Proposal, ProposalInfo,
 	};
 	use frame_support::{pallet_prelude::*, traits::tokens::nonfungibles::Destroy, transactional};
 	use frame_system::{ensure_signed, pallet_prelude::OriginFor};
@@ -24,10 +24,10 @@ pub mod pallet {
 	use rmrk_traits::*;
 	use sp_std::vec::Vec;
 
-	pub type BoundedInterpretationOf<T> =
+	pub type BoundedResourceOf<T> =
 		BoundedVec<u8, <T as pallet_rmrk_core::Config>::ResourceSymbolLimit>;
 
-	pub type InterpretationInfoOf<T> = ResourceInfo<BoundedInterpretationOf<T>, StringLimitOf<T>>;
+	pub type ResourceInfoOf<T> = ResourceInfo<BoundedResourceOf<T>, StringLimitOf<T>>;
 
 	#[pallet::config]
 	pub trait Config:
@@ -74,7 +74,7 @@ pub mod pallet {
 			NMapKey<Twox64Concat, ItemTemplateId>,
 			NMapKey<Twox64Concat, ItemId>,
 			NMapKey<Twox64Concat, InterpretationTypeId>,
-			NMapKey<Twox64Concat, BoundedInterpretationOf<T>>,
+			NMapKey<Twox64Concat, BoundedResourceOf<T>>,
 		),
 		(),
 		OptionQuery,
@@ -88,9 +88,9 @@ pub mod pallet {
 		(
 			NMapKey<Blake2_128Concat, ItemTemplateId>,
 			NMapKey<Blake2_128Concat, InterpretationTypeId>,
-			NMapKey<Blake2_128Concat, BoundedInterpretationOf<T>>,
+			NMapKey<Blake2_128Concat, BoundedResourceOf<T>>,
 		),
-		InterpretationInfoOf<T>,
+		IntepretationInfo<BoundedResourceOf<T>, StringLimitOf<T>>,
 		OptionQuery,
 	>;
 
@@ -101,7 +101,7 @@ pub mod pallet {
 		_,
 		Twox64Concat,
 		ProposalId,
-		ProposalInfo<T::AccountId, BoundedInterpretationOf<T>, StringLimitOf<T>>,
+		ProposalInfo<T::AccountId, BoundedResourceOf<T>, StringLimitOf<T>>,
 		OptionQuery,
 	>;
 
@@ -262,7 +262,7 @@ pub mod pallet {
 			metadata: StringLimitOf<T>,
 			max: Option<u32>,
 			interpretations: Vec<
-				Interpretation<StringLimitOf<T>, BoundedInterpretationOf<T>, StringLimitOf<T>>,
+				Interpretation<StringLimitOf<T>, BoundedResourceOf<T>, StringLimitOf<T>>,
 			>,
 		) -> DispatchResult {
 			let sender = ensure_signed(origin)?;
@@ -467,7 +467,7 @@ pub mod pallet {
 			origin: OriginFor<T>,
 			author: T::AccountId,
 			template_id: ItemTemplateId,
-			change_set: Vec<Change<BoundedInterpretationOf<T>, StringLimitOf<T>>>,
+			change_set: Vec<Change<BoundedResourceOf<T>, StringLimitOf<T>>>,
 		) -> DispatchResult {
 			ensure_signed(origin)?;
 			let proposal_id = Self::submit_proposal(author, template_id, change_set)?;

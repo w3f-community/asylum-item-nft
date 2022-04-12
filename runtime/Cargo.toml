@@ -1,13 +1,11 @@
 [package]
 name = 'node-asylum-runtime'
 version = '4.0.0-dev'
-description = 'A fresh FRAME-based Substrate runtime, ready for hacking.'
-authors = ['Substrate DevHub <https://github.com/substrate-developer-hub>']
-homepage = 'https://substrate.io/'
+description = 'A FRAME-based Substrate runtime for Asylum on-chain ecosystem.'
+authors = ['horacio.lex@supercolony.net & Asylum <https://asylum.space/>']
+homepage = 'https://asylum.space/'
 edition = '2021'
 license = 'Unlicense'
-publish = false
-repository = 'https://github.com/substrate-developer-hub/substrate-node-template/'
 
 [package.metadata.docs.rs]
 targets = ['x86_64-unknown-linux-gnu']
@@ -17,10 +15,14 @@ default-features = false
 path = '../pallets/asylum-core'
 version = '0.0.1'
 
+[dependencies.asylum-game-distribution]
+default-features = false
+path = '../pallets/asylum-game-distribution'
+version = '0.0.1'
+
 [dependencies.pallet-rmrk-core]
 default-features = false
-git = 'https://github.com/SupremaLex/rmrk-substrate.git'
-branch = "feat/resource_removal"
+git = 'https://github.com/rmrk-team/rmrk-substrate.git'
 package = 'pallet-rmrk-core'
 version = '0.0.1'
 
@@ -232,6 +234,7 @@ std = [
     'pallet-uniques/std',
     'pallet-rmrk-core/std',
     'asylum-core/std',
+    'asylum-game-distribution/std',
     'sp-api/std',
     'sp-block-builder/std',
     'sp-consensus-aura/std',
