@@ -79,19 +79,13 @@ version = '4.0.0-dev'
 optional = true
 version = '0.3.1'
 
-[dependencies.pallet-aura]
+[dependencies.pallet-authorship]
 default-features = false
 git = 'https://github.com/paritytech/substrate.git'
 branch = "polkadot-v0.9.17"
 version = '4.0.0-dev'
 
 [dependencies.pallet-balances]
-default-features = false
-git = 'https://github.com/paritytech/substrate.git'
-branch = "polkadot-v0.9.17"
-version = '4.0.0-dev'
-
-[dependencies.pallet-grandpa]
 default-features = false
 git = 'https://github.com/paritytech/substrate.git'
 branch = "polkadot-v0.9.17"
@@ -149,12 +143,6 @@ default-features = false
 git = 'https://github.com/paritytech/substrate.git'
 branch = "polkadot-v0.9.17"
 version = '4.0.0-dev'
-
-[dependencies.sp-consensus-aura]
-default-features = false
-git = 'https://github.com/paritytech/substrate.git'
-branch = "polkadot-v0.9.17"
-version = '0.10.0-dev'
 
 [dependencies.sp-core]
 default-features = false
@@ -223,9 +211,8 @@ std = [
     'frame-support/std',
     'frame-system-rpc-runtime-api/std',
     'frame-system/std',
-    'pallet-aura/std',
+    'pallet-authorship/std',
     'pallet-balances/std',
-    'pallet-grandpa/std',
     'pallet-randomness-collective-flip/std',
     'pallet-sudo/std',
     'pallet-timestamp/std',
@@ -237,7 +224,6 @@ std = [
     'asylum-game-distribution/std',
     'sp-api/std',
     'sp-block-builder/std',
-    'sp-consensus-aura/std',
     'sp-core/std',
     'sp-inherents/std',
     'sp-offchain/std',

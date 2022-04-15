@@ -141,20 +141,15 @@ git = 'https://github.com/paritytech/substrate.git'
 branch = "polkadot-v0.9.17"
 version = '0.10.0-dev'
 
-[dependencies.sp-consensus-aura]
-git = 'https://github.com/paritytech/substrate.git'
-branch = "polkadot-v0.9.17"
-version = '0.10.0-dev'
-
 [dependencies.sp-core]
 git = 'https://github.com/paritytech/substrate.git'
 branch = "polkadot-v0.9.17"
 version = '5.0.0'
 
-[dependencies.sp-finality-grandpa]
+[dependencies.sc-consensus-manual-seal]
 git = 'https://github.com/paritytech/substrate.git'
 branch = "polkadot-v0.9.17"
-version = '4.0.0-dev'
+version = '0.10.0-dev'
 
 [dependencies.sp-runtime]
 git = 'https://github.com/paritytech/substrate.git'
