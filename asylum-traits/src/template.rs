@@ -1,12 +1,12 @@
 use crate::{
-	primitives::{ItemTemplateId, ProposalId},
+	primitives::{ProposalId, TemplateId},
 	Interpretation,
 };
 use sp_runtime::{DispatchError, DispatchResult};
 use sp_std::vec::Vec;
 
 /// Trait for providing Template(NFT collection) functionality for Asylum
-pub trait ItemTemplate<AccountId, BoundedString, BoundedInterpretation> {
+pub trait ItemTemplate<AccountId, BoundedString, BoundedInterpretationId, BoundedTag> {
 	/// Create new item's Template
 	///
 	/// # Arguments
@@ -18,9 +18,9 @@ pub trait ItemTemplate<AccountId, BoundedString, BoundedInterpretation> {
 	///
 	/// Ok(id) of newly create template
 	fn template_create(
-		template_id: ItemTemplateId,
-		interpretations: Vec<Interpretation<BoundedString, BoundedInterpretation, BoundedString>>,
-	) -> Result<ItemTemplateId, DispatchError>;
+		template_id: TemplateId,
+		interpretations: Vec<Interpretation<BoundedInterpretationId, BoundedString, BoundedTag>>,
+	) -> Result<TemplateId, DispatchError>;
 
 	/// Update item's Template according to approved proposal
 	///
@@ -32,7 +32,7 @@ pub trait ItemTemplate<AccountId, BoundedString, BoundedInterpretation> {
 	fn template_update(
 		sender: AccountId,
 		proposal_id: ProposalId,
-		template_id: ItemTemplateId,
+		template_id: TemplateId,
 	) -> DispatchResult;
 
 	/// Destroy empty template
@@ -44,5 +44,5 @@ pub trait ItemTemplate<AccountId, BoundedString, BoundedInterpretation> {
 	/// # Return
 	///
 	/// Ok(id) of destroyed template
-	fn template_destroy(template_id: ItemTemplateId) -> Result<ItemTemplateId, DispatchError>;
+	fn template_destroy(template_id: TemplateId) -> Result<TemplateId, DispatchError>;
 }

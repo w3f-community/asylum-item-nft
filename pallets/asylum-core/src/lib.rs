@@ -14,26 +14,32 @@ mod tests;
 #[frame_support::pallet]
 pub mod pallet {
 	use asylum_traits::{
-		primitives::{InterpretationId, InterpretationTypeId, ItemId, ItemTemplateId, ProposalId},
-		Change, IntepretationInfo, IntepretationTypeInfo, Interpretable, Interpretation, Item,
-		ItemTemplate, Proposal, ProposalInfo,
+		primitives::{ItemId, ProposalId, TemplateId},
+		Change, IntepretationInfo, Interpretable, Interpretation, Item, ItemTemplate, Proposal,
+		ProposalInfo, TagInfo,
 	};
 	use frame_support::{pallet_prelude::*, traits::tokens::nonfungibles::Destroy, transactional};
 	use frame_system::{ensure_signed, pallet_prelude::OriginFor};
 	use pallet_rmrk_core::{BoundedCollectionSymbolOf, KeyLimitOf, StringLimitOf};
 	use rmrk_traits::*;
-	use sp_std::vec::Vec;
+	use sp_std::{collections::btree_set::BTreeSet, vec::Vec};
 
-	pub type BoundedResourceOf<T> =
+	pub type BoundedInterpretationOf<T> =
 		BoundedVec<u8, <T as pallet_rmrk_core::Config>::ResourceSymbolLimit>;
 
-	pub type ResourceInfoOf<T> = ResourceInfo<BoundedResourceOf<T>, StringLimitOf<T>>;
+	pub type ResourceInfoOf<T> = ResourceInfo<BoundedInterpretationOf<T>, StringLimitOf<T>>;
+
+	pub type TagLimitOf<T> = BoundedVec<u8, <T as Config>::TagLimit>;
+	pub type TagsOf<T> = BTreeSet<TagLimitOf<T>>;
 
 	#[pallet::config]
 	pub trait Config:
 		frame_system::Config + pallet_rmrk_core::Config + pallet_uniques::Config
 	{
 		type Event: From<Event<Self>> + IsType<<Self as frame_system::Config>::Event>;
+
+		#[pallet::constant]
+		type TagLimit: Get<u32>;
 	}
 
 	#[pallet::pallet]
@@ -42,86 +48,68 @@ pub mod pallet {
 	pub struct Pallet<T>(_);
 
 	#[pallet::storage]
-	pub(super) type NextInterpretationTypeId<T: Config> =
-		StorageValue<_, InterpretationTypeId, ValueQuery>;
-
-	#[pallet::storage]
 	pub(super) type NextProposalId<T: Config> = StorageValue<_, ProposalId, ValueQuery>;
 
 	#[pallet::storage]
-	#[pallet::getter(fn interpretation_type_id)]
-	/// Human-readable names of interpretation types
-	pub(super) type IntepretationTypeNames<T: Config> =
-		StorageMap<_, Blake2_128Concat, StringLimitOf<T>, InterpretationTypeId, OptionQuery>;
+	/// Interpretation tag's infos
+	#[pallet::getter(fn tags)]
+	pub(super) type Tags<T: Config> =
+		StorageMap<_, Twox64Concat, TagLimitOf<T>, TagInfo<StringLimitOf<T>>, OptionQuery>;
 
 	#[pallet::storage]
-	#[pallet::getter(fn interpretation_type_info)]
-	/// Interpretation type's infos
-	pub(super) type IntepretationTypes<T: Config> = StorageMap<
-		_,
-		Twox64Concat,
-		InterpretationTypeId,
-		IntepretationTypeInfo<StringLimitOf<T>>,
-		OptionQuery,
-	>;
-
-	#[pallet::storage]
-	#[pallet::getter(fn item_interpretations)]
 	/// Interpretations supported by Items
+	#[pallet::getter(fn item_interpretations)]
 	pub(super) type ItemIntepretations<T: Config> = StorageNMap<
 		_,
 		(
-			NMapKey<Twox64Concat, ItemTemplateId>,
+			NMapKey<Twox64Concat, TemplateId>,
 			NMapKey<Twox64Concat, ItemId>,
-			NMapKey<Twox64Concat, InterpretationTypeId>,
-			NMapKey<Twox64Concat, BoundedResourceOf<T>>,
+			NMapKey<Twox64Concat, BoundedInterpretationOf<T>>,
 		),
-		(),
+		TagsOf<T>,
 		OptionQuery,
 	>;
 
 	#[pallet::storage]
-	#[pallet::getter(fn template_interpretations)]
 	/// Interpretations supported by Items
-	pub(super) type TemplateIntepretations<T: Config> = StorageNMap<
+	#[pallet::getter(fn template_interpretations)]
+	pub(super) type TemplateIntepretations<T: Config> = StorageDoubleMap<
 		_,
-		(
-			NMapKey<Blake2_128Concat, ItemTemplateId>,
-			NMapKey<Blake2_128Concat, InterpretationTypeId>,
-			NMapKey<Blake2_128Concat, BoundedResourceOf<T>>,
-		),
-		IntepretationInfo<BoundedResourceOf<T>, StringLimitOf<T>>,
+		Blake2_128Concat,
+		TemplateId,
+		Blake2_128Concat,
+		BoundedInterpretationOf<T>,
+		(IntepretationInfo<BoundedInterpretationOf<T>, StringLimitOf<T>>, TagsOf<T>),
 		OptionQuery,
 	>;
 
 	#[pallet::storage]
-	#[pallet::getter(fn proposal_info)]
 	/// Proposal's infos
 	pub(super) type Proposals<T: Config> = StorageMap<
 		_,
 		Twox64Concat,
 		ProposalId,
-		ProposalInfo<T::AccountId, BoundedResourceOf<T>, StringLimitOf<T>>,
+		ProposalInfo<T::AccountId, BoundedInterpretationOf<T>, StringLimitOf<T>, TagLimitOf<T>>,
 		OptionQuery,
 	>;
 
 	#[pallet::genesis_config]
 	pub struct GenesisConfig<T: Config> {
-		pub interpretation_types: Vec<(String, String)>,
+		pub interpretation_tags: Vec<(String, String)>,
 		_marker: PhantomData<T>,
 	}
 
 	#[cfg(feature = "std")]
 	impl<T: Config> GenesisConfig<T> {
-		pub fn new(interpretation_types: Vec<(String, String)>) -> Self {
-			Self { interpretation_types, _marker: Default::default() }
+		pub fn new(interpretation_tags: Vec<(String, String)>) -> Self {
+			Self { interpretation_tags, _marker: Default::default() }
 		}
 	}
 
 	#[cfg(feature = "std")]
 	impl<T: Config> Default for GenesisConfig<T> {
 		fn default() -> Self {
-			Self { interpretation_types: Default::default(), _marker: Default::default() }
+			Self { interpretation_tags: Default::default(), _marker: Default::default() }
 		}
 	}
 
@@ -135,11 +123,10 @@ pub mod pallet {
 				TryInto::<BoundedVec<u8, T>>::try_into(string.as_bytes().to_vec()).unwrap()
 			}
 
-			for (i, (type_name, metadata)) in self.interpretation_types.iter().enumerate() {
-				IntepretationTypeNames::<T>::insert(bounded(type_name), i as u32);
+			for (tag, metadata) in self.interpretation_tags.iter() {
 				let metadata = bounded(metadata);
-				let info = IntepretationTypeInfo { metadata };
-				IntepretationTypes::<T>::insert(i as u32, info);
+				let info = TagInfo { metadata };
+				Tags::<T>::insert(bounded(tag), info);
 			}
 		}
 	}
@@ -147,66 +134,26 @@ pub mod pallet {
 	#[pallet::event]
 	#[pallet::generate_deposit(pub(super) fn deposit_event)]
 	pub enum Event<T: Config> {
-		InterpretationTypeCreated {
-			type_name: StringLimitOf<T>,
-			type_id: InterpretationTypeId,
-		},
-		InterpretationCreated {
-			interpretation_name: StringLimitOf<T>,
-			intepretation_id: InterpretationId,
-		},
-		TemplateCreated {
-			template_name: BoundedCollectionSymbolOf<T>,
-			template_id: ItemTemplateId,
-		},
-		TemplateUpdated {
-			template_id: ItemTemplateId,
-		},
-		TemplateIssuerChanged {
-			template_id: ItemTemplateId,
-			new_issuer: T::AccountId,
-		},
-		TemplateDestroyed {
-			template_id: ItemTemplateId,
-		},
-		ItemMinted {
-			template_id: ItemTemplateId,
-			item_id: ItemId,
-			recipient: T::AccountId,
-		},
-		ItemBurned {
-			template_id: ItemTemplateId,
-			item_id: ItemId,
-		},
-		ItemTransfered {
-			template_id: ItemTemplateId,
-			item_id: ItemId,
-			destination: T::AccountId,
-		},
-		ItemUpdated {
-			template_id: ItemTemplateId,
-			item_id: ItemId,
-		},
-		ItemAttributeSet {
-			item_id: ItemId,
-			key: KeyLimitOf<T>,
-		},
-		ItemAttributeCleared {
-			item_id: ItemId,
-			key: KeyLimitOf<T>,
-		},
-		ProposalSubmitted {
-			proposal_id: ProposalId,
-		},
+		InterpretationTagCreated { tag: TagLimitOf<T> },
+		TemplateCreated { template_name: BoundedCollectionSymbolOf<T>, template_id: TemplateId },
+		TemplateUpdated { template_id: TemplateId },
+		TemplateIssuerChanged { template_id: TemplateId, new_issuer: T::AccountId },
+		TemplateDestroyed { template_id: TemplateId },
+		ItemMinted { template_id: TemplateId, item_id: ItemId },
+		ItemBurned { template_id: TemplateId, item_id: ItemId },
+		ItemTransfered { template_id: TemplateId, item_id: ItemId, destination: T::AccountId },
+		ItemUpdated { template_id: TemplateId, item_id: ItemId },
+		ItemAttributeSet { item_id: ItemId, key: KeyLimitOf<T> },
+		ItemAttributeCleared { item_id: ItemId, key: KeyLimitOf<T> },
+		ProposalSubmitted { proposal_id: ProposalId },
 	}
 
 	#[pallet::error]
 	pub enum Error<T> {
-		InterpretationTypeAlreadyExist,
-		InterpretationTypeNotExist,
-		TemplateAlreadySupportThisType,
-		TemplateDoesntSupportThisType,
-		TemplateDoesntSupportThisInterpretations,
+		TagAlreadyExists,
+		UnknownTag,
+		TemplateDoesntSupportThisInterpretation,
+		EmptyTags,
 		ProposalNotExist,
 		ProposalNotApproved,
 		ProposalInappropriateTemplate,
@@ -217,28 +164,27 @@ pub mod pallet {
 	#[pallet::call]
 	impl<T: Config> Pallet<T>
 	where
-		T: pallet_uniques::Config<ClassId = ItemTemplateId, InstanceId = ItemId>
+		T: pallet_uniques::Config<ClassId = TemplateId, InstanceId = ItemId>
 			+ pallet_rmrk_core::Config,
 	{
-		/// Create new interpretation type.
+		/// Create new interpretation tag.
 		///
 		/// Origin must be Signed.
 		///
-		/// - `type_name`: The interpretation type to be created.
-		/// - `metadata`: The link to the interpretation type description stored somewhere(for
-		///   example ipfs).
+		/// - `tag`: The interpretation tag to be created.
+		/// - `metadata`: The link to the interpretation tag's metadata
 		///
-		/// Emits `InterpretationTypeCreated`.
+		/// Emits `InterpretationTagCreated`.
 		#[pallet::weight(10_000)]
 		#[transactional]
-		pub fn create_interpretation_type(
+		pub fn create_interpretation_tag(
 			origin: OriginFor<T>,
-			type_name: StringLimitOf<T>,
+			tag: TagLimitOf<T>,
 			metadata: StringLimitOf<T>,
 		) -> DispatchResult {
 			ensure_signed(origin)?;
-			let type_id = Self::interpretation_type_create(&type_name, metadata)?;
-			Self::deposit_event(Event::InterpretationTypeCreated { type_name, type_id });
+			Self::interpretation_tag_create(&tag, metadata)?;
+			Self::deposit_event(Event::InterpretationTagCreated { tag });
 			Ok(())
 		}
 
@@ -262,7 +208,7 @@ pub mod pallet {
 			metadata: StringLimitOf<T>,
 			max: Option<u32>,
 			interpretations: Vec<
-				Interpretation<StringLimitOf<T>, BoundedResourceOf<T>, StringLimitOf<T>>,
+				Interpretation<BoundedInterpretationOf<T>, StringLimitOf<T>, TagLimitOf<T>>,
 			>,
 		) -> DispatchResult {
 			let sender = ensure_signed(origin)?;
@@ -300,10 +246,7 @@ pub mod pallet {
 		/// Emits `TemplateDestroyed`.
 		#[pallet::weight(10_000)]
 		#[transactional]
-		pub fn destroy_template(
-			origin: OriginFor<T>,
-			template_id: ItemTemplateId,
-		) -> DispatchResult {
+		pub fn destroy_template(origin: OriginFor<T>, template_id: TemplateId) -> DispatchResult {
 			let sender = ensure_signed(origin)?;
 			let template_id = Self::template_destroy(template_id)?;
 			pallet_rmrk_core::Pallet::<T>::collection_burn(sender.clone(), template_id)?;
@@ -327,7 +270,7 @@ pub mod pallet {
 		#[transactional]
 		pub fn update_template(
 			origin: OriginFor<T>,
-			template_id: ItemTemplateId,
+			template_id: TemplateId,
 			proposal_id: ProposalId,
 		) -> DispatchResult {
 			let sender = ensure_signed(origin)?;
@@ -343,7 +286,6 @@ pub mod pallet {
 		/// Origin must be Signed and sender must be Issuer of Template.
 		///
 		/// - `owner`: The owner of the minted item.
-		/// - `recipient`: The recipient of the item 'template_id' Template.
 		/// - `template_id`: The template name or id.
 		/// - `metadata`: The link to the item description stored somewhere(for example ipfs).
 		///
@@ -353,8 +295,7 @@ pub mod pallet {
 		pub fn mint_item_from_template(
 			origin: OriginFor<T>,
 			owner: T::AccountId,
-			recipient: T::AccountId,
-			template_id: ItemTemplateId,
+			template_id: TemplateId,
 			metadata: StringLimitOf<T>,
 		) -> DispatchResult {
 			let sender = ensure_signed(origin)?;
@@ -362,14 +303,14 @@ pub mod pallet {
 				sender.clone(),
 				owner.clone(),
 				template_id,
-				Some(recipient.clone()),
+				None,
 				None,
 				metadata,
 			)?;
 			pallet_uniques::Pallet::<T>::do_mint(template_id, item_id, owner, |_details| Ok(()))?;
 			Self::item_mint_from_template(sender, template_id, item_id)?;
 
-			Self::deposit_event(Event::ItemMinted { template_id, item_id, recipient });
+			Self::deposit_event(Event::ItemMinted { template_id, item_id });
 			Ok(())
 		}
 
@@ -386,7 +327,7 @@ pub mod pallet {
 		#[transactional]
 		pub fn burn_item(
 			origin: OriginFor<T>,
-			template_id: ItemTemplateId,
+			template_id: TemplateId,
 			item_id: ItemId,
 		) -> DispatchResult {
 			ensure_signed(origin)?;
@@ -412,7 +353,7 @@ pub mod pallet {
 		#[transactional]
 		pub fn transfer_item(
 			origin: OriginFor<T>,
-			template_id: ItemTemplateId,
+			template_id: TemplateId,
 			item_id: ItemId,
 			destination: AccountIdOrCollectionNftTuple<T::AccountId>,
 		) -> DispatchResult {
@@ -444,7 +385,7 @@ pub mod pallet {
 		#[transactional]
 		pub fn accept_item_update(
 			origin: OriginFor<T>,
-			template_id: ItemTemplateId,
+			template_id: TemplateId,
 			item_id: ItemId,
 		) -> DispatchResult {
 			let sender = ensure_signed(origin)?;
@@ -466,8 +407,8 @@ pub mod pallet {
 		pub fn submit_template_change_proposal(
 			origin: OriginFor<T>,
 			author: T::AccountId,
-			template_id: ItemTemplateId,
-			change_set: Vec<Change<BoundedResourceOf<T>, StringLimitOf<T>>>,
+			template_id: TemplateId,
+			change_set: Vec<Change<BoundedInterpretationOf<T>, StringLimitOf<T>, TagLimitOf<T>>>,
 		) -> DispatchResult {
 			ensure_signed(origin)?;
 			let proposal_id = Self::submit_proposal(author, template_id, change_set)?;

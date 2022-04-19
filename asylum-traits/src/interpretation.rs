@@ -1,21 +1,16 @@
-use sp_runtime::DispatchError;
-
-use crate::primitives::*;
+use sp_runtime::DispatchResult;
 
 /// Trait for providing control over Asylum Item interpretations
-pub trait Interpretable<BoundedString> {
-	/// Create new interpretation type
+pub trait Interpretable<BoundedString, BoundedTag> {
+	/// Create new interpretation tag
 	///
 	/// # Arguments
 	///
-	/// * `type_name` - A bounded string that hold humanreadble name of the interpretation type
-	/// * `metadata` - A bounded string that hold ifsh hash to metadata
+	/// * `tag` - A bounded string that hold tag
+	/// * `metadata` - A bounded string that hold ipfs hash to metadata
 	///
 	/// # Return
 	///
 	/// Id of newly create interpretation type
-	fn interpretation_type_create(
-		type_name: &BoundedString,
-		metadata: BoundedString,
-	) -> Result<InterpretationTypeId, DispatchError>;
+	fn interpretation_tag_create(tag: &BoundedTag, metadata: BoundedString) -> DispatchResult;
 }

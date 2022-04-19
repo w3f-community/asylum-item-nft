@@ -112,6 +112,7 @@ parameter_types! {
 	pub const MaxRecursions: u32 = 10;
 	pub const ResourceSymbolLimit: u32 = 10;
 	pub const CollectionSymbolLimit: u32 = 100;
+	pub const TagLimit: u32 = 32;
 }
 
 impl pallet_rmrk_core::Config for Test {
@@ -124,6 +125,7 @@ impl pallet_rmrk_core::Config for Test {
 
 impl asylum_core::Config for Test {
 	type Event = Event;
+	type TagLimit = TagLimit;
 }
 
 pub const ALICE: AccountId = AccountId::new([1u8; 32]);

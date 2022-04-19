@@ -1,20 +1,24 @@
 use crate::{mock::*, Error};
-use asylum_traits::{Change, IntepretationInfo, IntepretationTypeInfo, Interpretation};
+use asylum_traits::{Change, IntepretationInfo, Interpretation, TagInfo};
 use frame_support::{
 	assert_noop, assert_ok,
 	traits::{tokens::nonfungibles::Inspect, Get},
 	BoundedVec,
 };
 use rmrk_traits::{AccountIdOrCollectionNftTuple, ResourceInfo};
+use sp_std::collections::btree_set::BTreeSet;
 
-const TYPE_2D: &str = "2D";
-const TYPE_3D: &str = "3D";
+const PREFIX_2D: &str = "2D";
+const PREFIX_3D: &str = "3D";
+const TAG_WEAPON: &str = "weapon";
+const TAG_DARK: &str = "dark";
 
 const PIXEL: &str = "pixel";
 const COMICS: &str = "comics";
 const ANIME: &str = "anime";
 
-const TYPES: &[&str] = &[TYPE_2D, TYPE_3D];
+const TAGS: &[&str] = &[TAG_WEAPON, TAG_DARK];
+const PREFIX: &[&str] = &[PREFIX_2D, PREFIX_3D];
 const INTERPRETATIONS: &[&str] = &[PIXEL, COMICS, ANIME];
 
 const MOCK_HASH: &str = "ipfs://hash";
@@ -34,7 +38,7 @@ where
 }
 
 fn interpretation<T, V>(
-	type_id: &str,
+	tag: &str,
 	id: &str,
 	metadata: &str,
 ) -> IntepretationInfo<BoundedVec<u8, T>, BoundedVec<u8, V>>
@@ -42,25 +46,34 @@ where
 	T: Get<u32>,
 	V: Get<u32>,
 {
-	let id = concat(type_id, id);
+	let id = concat(tag, id);
 	let metadata = bounded(metadata);
 	IntepretationInfo { id, src: Some(metadata.clone()), metadata: Some(metadata) }
 }
 
-fn create_types() {
-	let name = bounded(TYPE_2D);
-	let metadata = bounded(MOCK_HASH);
-	assert_ok!(AsylumCore::create_interpretation_type(
-		Origin::signed(ALICE),
-		name,
-		metadata.clone()
-	));
-	let name = bounded(TYPE_3D);
-	assert_ok!(AsylumCore::create_interpretation_type(Origin::signed(ALICE), name, metadata));
+fn create_tags() {
+	for tag in TAGS {
+		let name = bounded(tag);
+		let metadata = bounded(MOCK_HASH);
+		assert_ok!(AsylumCore::create_interpretation_tag(Origin::signed(ALICE), name, metadata));
+	}
+}
+
+fn tags_set<T>(tags: &[&str]) -> BTreeSet<BoundedVec<u8, T>>
+where
+	T: Get<u32>,
+{
+	let mut set = BTreeSet::new();
+	for tag in tags {
+		set.insert(bounded(tag));
+	}
+	set
 }
 
 fn create_template() {
-	create_types();
+	create_tags();
+	let tags = tags_set(&[TAG_WEAPON, TAG_DARK]);
+
 	assert_ok!(AsylumCore::create_template(
 		Origin::signed(ALICE),
 		bounded("MyTemplate"),
@@ -68,21 +81,29 @@ fn create_template() {
 		None,
 		vec![
 			Interpretation {
-				type_name: bounded(TYPE_2D),
-				interpretations: vec![
-					interpretation(TYPE_2D, PIXEL, MOCK_HASH),
-					interpretation(TYPE_2D, COMICS, MOCK_HASH),
-					interpretation(TYPE_2D, ANIME, MOCK_HASH)
-				]
+				tags: tags.clone(),
+				interpretation: interpretation(PREFIX_2D, PIXEL, MOCK_HASH),
 			},
 			Interpretation {
-				type_name: bounded(TYPE_3D),
-				interpretations: vec![
-					interpretation(TYPE_3D, PIXEL, MOCK_HASH),
-					interpretation(TYPE_3D, COMICS, MOCK_HASH),
-					interpretation(TYPE_3D, ANIME, MOCK_HASH)
-				]
-			}
+				tags: tags.clone(),
+				interpretation: interpretation(PREFIX_2D, COMICS, MOCK_HASH),
+			},
+			Interpretation {
+				tags: tags.clone(),
+				interpretation: interpretation(PREFIX_2D, ANIME, MOCK_HASH),
+			},
+			Interpretation {
+				tags: tags.clone(),
+				interpretation: interpretation(PREFIX_3D, PIXEL, MOCK_HASH),
+			},
+			Interpretation {
+				tags: tags.clone(),
+				interpretation: interpretation(PREFIX_3D, COMICS, MOCK_HASH),
+			},
+			Interpretation {
+				tags,
+				interpretation: interpretation(PREFIX_3D, ANIME, MOCK_HASH),
+			},
 		],
 	));
 }
@@ -90,7 +111,6 @@ fn create_template() {
 fn mint_item_from_template() {
 	assert_ok!(AsylumCore::mint_item_from_template(
 		Origin::signed(ALICE),
-		ALICE,
 		ALICE,
 		0,
 		bounded(MOCK_HASH)
@@ -115,36 +135,19 @@ fn to_resource<BoundedInterpretationId, BoundedString>(
 }
 
 #[test]
-fn should_create_interpretation_type() {
+fn should_create_interpretation_tag() {
 	ExtBuilder::default().build().execute_with(|| {
-		let name = bounded(TYPE_2D);
+		let name = bounded(PREFIX_2D);
 		let metadata = bounded(MOCK_HASH);
-		assert_ok!(AsylumCore::create_interpretation_type(
+		assert_ok!(AsylumCore::create_interpretation_tag(
 			Origin::signed(ALICE),
 			name.clone(),
 			metadata.clone()
 		));
-		let id = AsylumCore::interpretation_type_id(name).unwrap();
-		assert_eq!(
-			AsylumCore::interpretation_type_info(id).unwrap(),
-			IntepretationTypeInfo { metadata }
-		);
-	});
-}
-
-#[test]
-fn should_fail_interpretation_type_1() {
-	ExtBuilder::default().build().execute_with(|| {
-		let name = bounded(TYPE_2D);
-		let metadata = bounded(MOCK_HASH);
-		assert_ok!(AsylumCore::create_interpretation_type(
-			Origin::signed(ALICE),
-			name.clone(),
-			metadata.clone()
-		));
+		assert_eq!(AsylumCore::tags(name.clone()).unwrap(), TagInfo { metadata: metadata.clone() });
 		assert_noop!(
-			AsylumCore::create_interpretation_type(Origin::signed(ALICE), name, metadata),
-			Error::<Test>::InterpretationTypeAlreadyExist
+			AsylumCore::create_interpretation_tag(Origin::signed(ALICE), name, metadata),
+			Error::<Test>::TagAlreadyExists
 		);
 	});
 }
@@ -153,27 +156,17 @@ fn should_fail_interpretation_type_1() {
 fn should_create_template() {
 	ExtBuilder::default().build().execute_with(|| {
 		create_template();
-		for type_name in TYPES {
-			let type_id = AsylumCore::interpretation_type_id(bounded(type_name)).unwrap();
+		let tags = tags_set(&[TAG_WEAPON, TAG_DARK]);
+		for tag in PREFIX {
 			for interpretation_id in INTERPRETATIONS {
 				assert_eq!(
-					AsylumCore::template_interpretations((
-						0,
-						type_id,
-						concat(type_name, interpretation_id)
-					)),
-					Some(interpretation(type_name, interpretation_id, MOCK_HASH))
+					AsylumCore::template_interpretations(0, concat(tag, interpretation_id)),
+					Some((interpretation(tag, interpretation_id, MOCK_HASH), tags.clone()))
 				);
 			}
 		}
 		assert_eq!(Uniques::class_owner(&0), Some(ALICE));
-	});
-}
 
-#[test]
-fn should_fail_create_template_1() {
-	ExtBuilder::default().build().execute_with(|| {
-		create_types();
 		assert_noop!(
 			AsylumCore::create_template(
 				Origin::signed(ALICE),
@@ -181,14 +174,11 @@ fn should_fail_create_template_1() {
 				bounded(MOCK_HASH),
 				None,
 				vec![Interpretation {
-					type_name: bounded("SomeNonexistentType"),
-					interpretations: vec![
-						interpretation(TYPE_2D, PIXEL, MOCK_HASH),
-						interpretation(TYPE_2D, COMICS, MOCK_HASH)
-					]
+					tags: BTreeSet::new(),
+					interpretation: interpretation(PREFIX_2D, PIXEL, MOCK_HASH),
 				}]
 			),
-			Error::<Test>::InterpretationTypeNotExist
+			Error::<Test>::EmptyTags
 		);
 	});
 }
@@ -197,38 +187,12 @@ fn should_fail_create_template_1() {
 fn should_destroy_template() {
 	ExtBuilder::default().build().execute_with(|| {
 		create_template();
-		assert_ok!(AsylumCore::destroy_template(Origin::signed(ALICE), 0));
-	});
-}
-
-#[test]
-fn should_fail_destroy_template_1() {
-	ExtBuilder::default().build().execute_with(|| {
-		create_template();
 		assert_noop!(
 			AsylumCore::destroy_template(Origin::signed(BOB), 0),
 			pallet_uniques::Error::<Test>::NoPermission
 		);
-	});
-}
-
-#[test]
-fn should_fail_destroy_template_2() {
-	ExtBuilder::default().build().execute_with(|| {
-		assert_noop!(
-			AsylumCore::destroy_template(Origin::signed(ALICE), 0),
-			pallet_rmrk_core::Error::<Test>::CollectionUnknown
-		);
-	});
-}
-
-#[test]
-fn should_fail_destroy_template_3() {
-	ExtBuilder::default().build().execute_with(|| {
-		create_template();
 		assert_ok!(AsylumCore::mint_item_from_template(
 			Origin::signed(ALICE),
-			ALICE,
 			ALICE,
 			0,
 			bounded(MOCK_HASH)
@@ -236,6 +200,12 @@ fn should_fail_destroy_template_3() {
 		assert_noop!(
 			AsylumCore::destroy_template(Origin::signed(ALICE), 0),
 			pallet_rmrk_core::Error::<Test>::CollectionNotEmpty
+		);
+		assert_ok!(AsylumCore::burn_item(Origin::signed(ALICE), 0, 0));
+		assert_ok!(AsylumCore::destroy_template(Origin::signed(ALICE), 0));
+		assert_noop!(
+			AsylumCore::destroy_template(Origin::signed(ALICE), 0),
+			pallet_rmrk_core::Error::<Test>::CollectionUnknown
 		);
 	});
 }
@@ -247,13 +217,11 @@ fn should_mint_item_from_template() {
 		assert_ok!(AsylumCore::mint_item_from_template(
 			Origin::signed(ALICE),
 			ALICE,
-			ALICE,
 			0,
 			bounded(MOCK_HASH)
 		));
 		assert_ok!(AsylumCore::mint_item_from_template(
 			Origin::signed(ALICE),
-			BOB,
 			BOB,
 			0,
 			bounded(MOCK_HASH)
@@ -264,23 +232,23 @@ fn should_mint_item_from_template() {
 		);
 		assert_ok!(AsylumCore::accept_item_update(Origin::signed(BOB), 0, 1));
 
-		for type_name in TYPES {
-			let type_id = AsylumCore::interpretation_type_id(bounded(type_name)).unwrap();
+		let tags = tags_set(&[TAG_WEAPON, TAG_DARK]);
+
+		for tag in PREFIX {
 			for interpretation_id in INTERPRETATIONS {
-				let res_id = concat(type_name, interpretation_id);
-				assert_eq!(AsylumCore::item_interpretations((0, 0, type_id, &res_id)), Some(()));
+				let res_id = concat(tag, interpretation_id);
+				assert_eq!(AsylumCore::item_interpretations((0, 0, &res_id)), Some(tags.clone()));
 				assert_eq!(
 					RmrkCore::resources((0, 0, &res_id)),
-					Some(to_resource(interpretation(type_name, interpretation_id, MOCK_HASH)))
+					Some(to_resource(interpretation(tag, interpretation_id, MOCK_HASH)))
 				);
-				assert_eq!(AsylumCore::item_interpretations((0, 1, type_id, &res_id)), Some(()));
+				assert_eq!(AsylumCore::item_interpretations((0, 1, &res_id)), Some(tags.clone()));
 				assert_eq!(
 					RmrkCore::resources((0, 1, &res_id)),
-					Some(to_resource(interpretation(type_name, interpretation_id, MOCK_HASH)))
+					Some(to_resource(interpretation(tag, interpretation_id, MOCK_HASH)))
 				);
 			}
 		}
-		assert_eq!(AsylumCore::item_interpretations((0, 0, 0, concat(TYPE_2D, PIXEL))), Some(()));
 	});
 }
 
@@ -450,31 +418,23 @@ fn should_fail_transfer_item() {
 #[test]
 fn should_burn_item() {
 	ExtBuilder::default().build().execute_with(|| {
+		assert_noop!(
+			AsylumCore::burn_item(Origin::signed(ALICE), 0, 0),
+			pallet_rmrk_core::Error::<Test>::CollectionUnknown
+		);
 		create_template();
 		mint_item_from_template();
 		assert_ok!(AsylumCore::burn_item(Origin::signed(ALICE), 0, 0));
-		for type_name in TYPES {
-			let type_id = AsylumCore::interpretation_type_id(bounded(type_name)).unwrap();
+		for tag in PREFIX {
 			for interpretation_id in INTERPRETATIONS {
 				assert_eq!(
-					AsylumCore::item_interpretations((
-						0,
-						0,
-						type_id,
-						concat(type_name, interpretation_id)
-					)),
+					AsylumCore::item_interpretations((0, 0, concat(tag, interpretation_id))),
 					None
 				);
 			}
 		}
 		assert_eq!(RmrkCore::nfts(0, 1), None);
-	});
-}
 
-#[test]
-fn should_fail_burn_item_1() {
-	ExtBuilder::default().build().execute_with(|| {
-		create_template();
 		assert_noop!(
 			AsylumCore::burn_item(Origin::signed(ALICE), 0, 0),
 			pallet_uniques::Error::<Test>::Unknown
@@ -483,20 +443,10 @@ fn should_fail_burn_item_1() {
 }
 
 #[test]
-fn should_fail_burn_item_2() {
-	ExtBuilder::default().build().execute_with(|| {
-		assert_noop!(
-			AsylumCore::burn_item(Origin::signed(ALICE), 0, 0),
-			pallet_rmrk_core::Error::<Test>::CollectionUnknown
-		);
-	});
-}
-
-#[test]
 fn should_update_template_and_item() {
 	ExtBuilder::default().build().execute_with(|| {
 		create_template();
-		assert_ok!(AsylumCore::create_interpretation_type(
+		assert_ok!(AsylumCore::create_interpretation_tag(
 			Origin::signed(ALICE),
 			bounded("NEW"),
 			bounded(MOCK_HASH),
@@ -504,103 +454,22 @@ fn should_update_template_and_item() {
 		assert_ok!(AsylumCore::mint_item_from_template(
 			Origin::signed(ALICE),
 			ALICE,
-			ALICE,
 			0,
 			bounded(MOCK_HASH)
 		));
+		let default_tags = tags_set(&[TAG_WEAPON, TAG_DARK]);
 		let modify_interpretation = Change::Modify {
-			interpretation_type: 1,
-			interpretations: vec![interpretation(TYPE_3D, PIXEL, "updated_metadata")],
+			interpretations: vec![interpretation(PREFIX_3D, PIXEL, "updated_metadata")],
 		};
-		let add_new_type = Change::Add {
-			interpretation_type: 2,
-			interpretations: vec![interpretation("NEW", PIXEL, MOCK_HASH)],
-		};
-		assert_ok!(AsylumCore::submit_template_change_proposal(
-			Origin::signed(ALICE),
-			ALICE,
-			0,
-			vec![modify_interpretation, add_new_type],
-		));
-		assert_ok!(AsylumCore::update_template(Origin::signed(ALICE), 0, 0));
-		assert_eq!(
-			AsylumCore::template_interpretations((0, 1, concat(TYPE_3D, PIXEL))),
-			Some(interpretation(TYPE_3D, PIXEL, "updated_metadata"))
-		);
-		assert_eq!(
-			AsylumCore::template_interpretations((0, 2, concat("NEW", PIXEL))),
-			Some(interpretation("NEW", PIXEL, MOCK_HASH))
-		);
-
-		assert_eq!(AsylumCore::item_interpretations((0, 0, 1, concat(TYPE_3D, PIXEL))), Some(()));
-		assert_eq!(
-			RmrkCore::resources((0, 0, concat(TYPE_3D, PIXEL))),
-			Some(to_resource(interpretation(TYPE_3D, PIXEL, "updated_metadata")))
-		);
-		assert_eq!(
-			RmrkCore::resources((0, 0, concat("NEW", PIXEL))),
-			Some(to_resource(interpretation("NEW", PIXEL, MOCK_HASH)))
-		);
-
-		let remove_interpretation = Change::RemoveInterpretation {
-			interpretation_type: 0,
-			interpretation_id: concat(TYPE_2D, PIXEL),
+		let new_tags = tags_set(&[PREFIX_3D, TAG_DARK]);
+		let add_interpretation = Change::Add {
+			interpretations: vec![(interpretation("NEW", PIXEL, MOCK_HASH), new_tags.clone())],
 		};
 		assert_ok!(AsylumCore::submit_template_change_proposal(
 			Origin::signed(ALICE),
 			ALICE,
 			0,
-			vec![remove_interpretation],
-		));
-		assert_ok!(AsylumCore::update_template(Origin::signed(ALICE), 0, 1));
-		assert_eq!(AsylumCore::template_interpretations((0, 0, concat(TYPE_2D, PIXEL))), None);
-
-		let remove_interpretation_type =
-			Change::RemoveInterpretationType { interpretation_type: 1 };
-		assert_ok!(AsylumCore::submit_template_change_proposal(
-			Origin::signed(ALICE),
-			ALICE,
-			0,
-			vec![remove_interpretation_type],
-		));
-		assert_ok!(AsylumCore::update_template(Origin::signed(ALICE), 0, 2));
-		for i in INTERPRETATIONS {
-			assert_eq!(AsylumCore::template_interpretations((0, 0, concat(TYPE_3D, i))), None);
-			assert_eq!(RmrkCore::resources((0, 0, concat(TYPE_3D, i))), None);
-		}
-		assert_eq!(RmrkCore::resources((0, 0, concat(TYPE_2D, PIXEL))), None);
-	});
-}
-
-#[test]
-fn should_update_template_and_item_pending() {
-	ExtBuilder::default().build().execute_with(|| {
-		create_template();
-		assert_ok!(AsylumCore::create_interpretation_type(
-			Origin::signed(ALICE),
-			bounded("NEW"),
-			bounded(MOCK_HASH),
-		));
-		assert_ok!(AsylumCore::mint_item_from_template(
-			Origin::signed(ALICE),
-			BOB,
-			BOB,
-			0,
-			bounded(MOCK_HASH)
-		));
-		let modify_interpretation = Change::Modify {
-			interpretation_type: 1,
-			interpretations: vec![interpretation(TYPE_3D, PIXEL, "updated_metadata")],
-		};
-		let add_new_type = Change::Add {
-			interpretation_type: 2,
-			interpretations: vec![interpretation("NEW", PIXEL, MOCK_HASH)],
-		};
-		assert_ok!(AsylumCore::submit_template_change_proposal(
-			Origin::signed(ALICE),
-			ALICE,
-			0,
-			vec![modify_interpretation, add_new_type],
+			vec![modify_interpretation, add_interpretation],
 		));
 		assert_noop!(
 			AsylumCore::update_template(Origin::signed(BOB), 0, 0),
@@ -608,22 +477,126 @@ fn should_update_template_and_item_pending() {
 		);
 		assert_ok!(AsylumCore::update_template(Origin::signed(ALICE), 0, 0));
 		assert_eq!(
-			AsylumCore::template_interpretations((0, 1, concat(TYPE_3D, PIXEL))),
-			Some(interpretation(TYPE_3D, PIXEL, "updated_metadata"))
+			AsylumCore::template_interpretations(0, concat(PREFIX_3D, PIXEL)),
+			Some((interpretation(PREFIX_3D, PIXEL, "updated_metadata"), default_tags.clone()))
 		);
 		assert_eq!(
-			AsylumCore::template_interpretations((0, 2, concat("NEW", PIXEL))),
-			Some(interpretation("NEW", PIXEL, MOCK_HASH))
+			AsylumCore::template_interpretations(0, concat("NEW", PIXEL)),
+			Some((interpretation("NEW", PIXEL, MOCK_HASH), new_tags.clone()))
 		);
-		assert_ok!(AsylumCore::accept_item_update(Origin::signed(BOB), 0, 0));
-		assert_eq!(AsylumCore::item_interpretations((0, 0, 1, concat(TYPE_3D, PIXEL))), Some(()));
+
 		assert_eq!(
-			RmrkCore::resources((0, 0, concat(TYPE_3D, PIXEL))),
-			Some(to_resource(interpretation(TYPE_3D, PIXEL, "updated_metadata")))
+			AsylumCore::item_interpretations((0, 0, concat(PREFIX_3D, PIXEL))),
+			Some(default_tags)
+		);
+		assert_eq!(
+			RmrkCore::resources((0, 0, concat(PREFIX_3D, PIXEL))),
+			Some(to_resource(interpretation(PREFIX_3D, PIXEL, "updated_metadata")))
 		);
 		assert_eq!(
 			RmrkCore::resources((0, 0, concat("NEW", PIXEL))),
 			Some(to_resource(interpretation("NEW", PIXEL, MOCK_HASH)))
+		);
+
+		let modify_tags = Change::ModifyTags {
+			interpretation_id: concat(PREFIX_3D, PIXEL),
+			tags: new_tags.clone(),
+		};
+		let remove_interpretation =
+			Change::RemoveInterpretation { interpretation_id: concat(PREFIX_2D, PIXEL) };
+		assert_ok!(AsylumCore::submit_template_change_proposal(
+			Origin::signed(ALICE),
+			ALICE,
+			0,
+			vec![remove_interpretation, modify_tags],
+		));
+		assert_ok!(AsylumCore::update_template(Origin::signed(ALICE), 0, 1));
+		assert_eq!(AsylumCore::template_interpretations(0, concat(PREFIX_2D, PIXEL)), None);
+		assert_eq!(
+			AsylumCore::item_interpretations((0, 0, concat(PREFIX_3D, PIXEL))),
+			Some(new_tags)
+		);
+	});
+}
+
+#[test]
+fn should_update_template_and_item_pending() {
+	ExtBuilder::default().build().execute_with(|| {
+		create_template();
+		assert_ok!(AsylumCore::create_interpretation_tag(
+			Origin::signed(ALICE),
+			bounded("NEW"),
+			bounded(MOCK_HASH),
+		));
+		assert_ok!(AsylumCore::mint_item_from_template(
+			Origin::signed(ALICE),
+			BOB,
+			0,
+			bounded(MOCK_HASH)
+		));
+		let default_tags = tags_set(&[TAG_WEAPON, TAG_DARK]);
+		let modify_interpretation = Change::Modify {
+			interpretations: vec![interpretation(PREFIX_3D, PIXEL, "updated_metadata")],
+		};
+		let new_tags = tags_set(&[PREFIX_3D, TAG_DARK]);
+		let add_interpretation = Change::Add {
+			interpretations: vec![(interpretation("NEW", PIXEL, MOCK_HASH), new_tags.clone())],
+		};
+		assert_ok!(AsylumCore::submit_template_change_proposal(
+			Origin::signed(ALICE),
+			ALICE,
+			0,
+			vec![modify_interpretation, add_interpretation],
+		));
+		assert_noop!(
+			AsylumCore::update_template(Origin::signed(BOB), 0, 0),
+			Error::<Test>::NoPermission
+		);
+		assert_ok!(AsylumCore::update_template(Origin::signed(ALICE), 0, 0));
+		assert_eq!(
+			AsylumCore::template_interpretations(0, concat(PREFIX_3D, PIXEL)),
+			Some((interpretation(PREFIX_3D, PIXEL, "updated_metadata"), default_tags.clone()))
+		);
+		assert_eq!(
+			AsylumCore::template_interpretations(0, concat("NEW", PIXEL)),
+			Some((interpretation("NEW", PIXEL, MOCK_HASH), new_tags.clone()))
+		);
+		assert_noop!(
+			AsylumCore::accept_item_update(Origin::signed(ALICE), 0, 0),
+			Error::<Test>::NoPermission
+		);
+		assert_ok!(AsylumCore::accept_item_update(Origin::signed(BOB), 0, 0));
+		assert_eq!(
+			AsylumCore::item_interpretations((0, 0, concat(PREFIX_3D, PIXEL))),
+			Some(default_tags)
+		);
+		assert_eq!(
+			RmrkCore::resources((0, 0, concat(PREFIX_3D, PIXEL))),
+			Some(to_resource(interpretation(PREFIX_3D, PIXEL, "updated_metadata")))
+		);
+		assert_eq!(
+			RmrkCore::resources((0, 0, concat("NEW", PIXEL))),
+			Some(to_resource(interpretation("NEW", PIXEL, MOCK_HASH)))
+		);
+
+		let modify_tags = Change::ModifyTags {
+			interpretation_id: concat(PREFIX_3D, PIXEL),
+			tags: new_tags.clone(),
+		};
+		let remove_interpretation =
+			Change::RemoveInterpretation { interpretation_id: concat(PREFIX_2D, PIXEL) };
+		assert_ok!(AsylumCore::submit_template_change_proposal(
+			Origin::signed(ALICE),
+			ALICE,
+			0,
+			vec![remove_interpretation, modify_tags],
+		));
+		assert_ok!(AsylumCore::update_template(Origin::signed(ALICE), 0, 1));
+		assert_ok!(AsylumCore::accept_item_update(Origin::signed(BOB), 0, 0));
+		assert_eq!(AsylumCore::template_interpretations(0, concat(PREFIX_2D, PIXEL)), None);
+		assert_eq!(
+			AsylumCore::item_interpretations((0, 0, concat(PREFIX_3D, PIXEL))),
+			Some(new_tags)
 		);
 	});
 }
@@ -632,18 +605,10 @@ fn should_update_template_and_item_pending() {
 fn should_fail_update_template() {
 	ExtBuilder::default().build().execute_with(|| {
 		create_template();
-		let remove_interpretation = Change::RemoveInterpretation {
-			interpretation_type: 1,
-			interpretation_id: concat(TYPE_3D, PIXEL),
-		};
-		let remove_type = Change::RemoveInterpretationType { interpretation_type: 0 };
+		let remove_interpretation =
+			Change::RemoveInterpretation { interpretation_id: concat(PREFIX_3D, PIXEL) };
 		let update_removed_interpretation = Change::Modify {
-			interpretation_type: 1,
-			interpretations: vec![interpretation(TYPE_3D, PIXEL, "updated_metadata")],
-		};
-		let update_removed_type = Change::Modify {
-			interpretation_type: 0,
-			interpretations: vec![interpretation(TYPE_2D, PIXEL, "updated_metadata")],
+			interpretations: vec![interpretation(PREFIX_3D, PIXEL, "updated_metadata")],
 		};
 
 		assert_ok!(AsylumCore::submit_template_change_proposal(
@@ -654,18 +619,7 @@ fn should_fail_update_template() {
 		));
 		assert_noop!(
 			AsylumCore::update_template(Origin::signed(ALICE), 0, 0),
-			Error::<Test>::TemplateDoesntSupportThisInterpretations
-		);
-
-		assert_ok!(AsylumCore::submit_template_change_proposal(
-			Origin::signed(ALICE),
-			ALICE,
-			0,
-			vec![remove_type, update_removed_type],
-		));
-		assert_noop!(
-			AsylumCore::update_template(Origin::signed(ALICE), 0, 1),
-			Error::<Test>::TemplateDoesntSupportThisInterpretations
+			Error::<Test>::TemplateDoesntSupportThisInterpretation
 		);
 	});
 }

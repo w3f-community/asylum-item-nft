@@ -1,6 +1,6 @@
 use sp_runtime::{DispatchError, DispatchResult};
 
-use crate::primitives::{ItemId, ItemTemplateId};
+use crate::primitives::{ItemId, TemplateId};
 
 /// Trait for providing basic functionality of Asylum Item
 pub trait Item<AccountId, BoundedName, BoundedString> {
@@ -13,9 +13,9 @@ pub trait Item<AccountId, BoundedName, BoundedString> {
 	/// * `item_id` - id of nft minted by rmrk-core-pallet
 	fn item_mint_from_template(
 		sender: AccountId,
-		template_id: ItemTemplateId,
+		template_id: TemplateId,
 		item_id: ItemId,
-	) -> Result<(ItemTemplateId, ItemId), DispatchError>; // ensure(template.issuer = sender)
+	) -> Result<(TemplateId, ItemId), DispatchError>; // ensure(template.issuer = sender)
 
 	/// Destroy item
 	///
@@ -24,9 +24,9 @@ pub trait Item<AccountId, BoundedName, BoundedString> {
 	/// * `template_id` - template id
 	/// * `item_id` - id of item
 	fn item_burn(
-		template_id: ItemTemplateId,
+		template_id: TemplateId,
 		item_id: ItemId,
-	) -> Result<(ItemTemplateId, ItemId), DispatchError>; // ensure(item.owner = sender)
+	) -> Result<(TemplateId, ItemId), DispatchError>; // ensure(item.owner = sender)
 
 	/// Accept item's update
 	///
@@ -37,7 +37,7 @@ pub trait Item<AccountId, BoundedName, BoundedString> {
 	/// * `item_id` - id of the item to update
 	fn item_accept_update(
 		sender: AccountId,
-		template_id: ItemTemplateId,
+		template_id: TemplateId,
 		item_id: ItemId,
 	) -> DispatchResult; // ensure(item.owner = sender)
 }
@@ -46,7 +46,7 @@ pub trait Item<AccountId, BoundedName, BoundedString> {
 pub trait Properties<AccountId, BoundedName, BoundedString> {
 	/// Set property Item(NFT)
 	fn set_property(
-		template_id: ItemTemplateId,
+		template_id: TemplateId,
 		item_id: ItemId,
 		key: BoundedString,
 		value: BoundedString,
@@ -55,7 +55,7 @@ pub trait Properties<AccountId, BoundedName, BoundedString> {
 
 	/// Clear property Item(NFT)
 	fn clear_property(
-		template_id: ItemTemplateId,
+		template_id: TemplateId,
 		item_id: ItemId,
 		key: BoundedString,
 		property_owner: AccountId,
