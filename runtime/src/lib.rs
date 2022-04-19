@@ -263,6 +263,7 @@ parameter_types! {
 	pub const MaxRecursions: u32 = 10;
 	pub const ResourceSymbolLimit: u32 = 10;
 	pub const CollectionSymbolLimit: u32 = 100;
+	pub const TagLimit: u32 = 32;
 }
 
 impl pallet_rmrk_core::Config for Runtime {
@@ -275,6 +276,7 @@ impl pallet_rmrk_core::Config for Runtime {
 
 impl asylum_core::Config for Runtime {
 	type Event = Event;
+	type TagLimit = TagLimit;
 }
 
 impl asylum_game_distribution::Config for Runtime {
@@ -447,7 +449,7 @@ impl_runtime_apis! {
 
 			let storage_info = AllPalletsWithSystem::storage_info();
 
-			return (list, storage_info)
+			(list, storage_info)
 		}
 
 		fn dispatch_benchmark(

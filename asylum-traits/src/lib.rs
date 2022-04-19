@@ -14,8 +14,6 @@ pub use types::*;
 
 pub mod primitives {
 	pub type ItemId = u32;
-	pub type ItemTemplateId = u32;
-	pub type InterpretationTypeId = u32;
-	pub type InterpretationId = u32;
+	pub type TemplateId = u32;
 	pub type ProposalId = u32;
 }

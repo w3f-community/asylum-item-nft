@@ -1,12 +1,12 @@
 use codec::{Decode, Encode};
 use scale_info::TypeInfo;
 use sp_runtime::RuntimeDebug;
-use sp_std::vec::Vec;
+use sp_std::{collections::btree_set::BTreeSet, vec::Vec};
 
 use crate::primitives::*;
 
 #[derive(Encode, Decode, Default, RuntimeDebug, TypeInfo, PartialEq, Eq)]
-pub struct IntepretationTypeInfo<BoundedString> {
+pub struct TagInfo<BoundedString> {
 	// ipfs hash
 	pub metadata: BoundedString,
 }
@@ -19,27 +19,26 @@ pub struct IntepretationInfo<BoundedInterpretationId, BoundedString> {
 }
 
 #[derive(Encode, Decode, RuntimeDebug, TypeInfo, PartialEq, Eq, Clone)]
-pub struct Interpretation<BoundedName, BoundedInterpretation, BoundedString> {
-	pub type_name: BoundedName,
-	pub interpretations: Vec<IntepretationInfo<BoundedInterpretation, BoundedString>>,
+pub struct Interpretation<BoundedInterpretationId, BoundedString, BoundedTag> {
+	pub tags: BTreeSet<BoundedTag>,
+	pub interpretation: IntepretationInfo<BoundedInterpretationId, BoundedString>,
 }
 
 #[derive(Encode, Decode, RuntimeDebug, TypeInfo, PartialEq, Eq, Clone)]
-pub enum Change<BoundedResource, BoundedString> {
+pub enum Change<BoundedInterpretationId, BoundedString, BoundedTag> {
 	Add {
-		interpretation_type: InterpretationTypeId,
-		interpretations: Vec<IntepretationInfo<BoundedResource, BoundedString>>,
+		interpretations:
+			Vec<(IntepretationInfo<BoundedInterpretationId, BoundedString>, BTreeSet<BoundedTag>)>,
 	},
 	Modify {
-		interpretation_type: InterpretationTypeId,
-		interpretations: Vec<IntepretationInfo<BoundedResource, BoundedString>>,
+		interpretations: Vec<IntepretationInfo<BoundedInterpretationId, BoundedString>>,
+	},
+	ModifyTags {
+		interpretation_id: BoundedInterpretationId,
+		tags: BTreeSet<BoundedTag>,
 	},
 	RemoveInterpretation {
-		interpretation_type: InterpretationTypeId,
-		interpretation_id: BoundedResource,
-	},
-	RemoveInterpretationType {
-		interpretation_type: InterpretationTypeId,
+		interpretation_id: BoundedInterpretationId,
 	},
 }
 
@@ -57,12 +56,12 @@ impl Default for ProposalState {
 }
 
 #[derive(Encode, Decode, Default, RuntimeDebug, TypeInfo, PartialEq, Eq)]
-pub struct ProposalInfo<AccountId, BoundedResource, BoundedString>
+pub struct ProposalInfo<AccountId, BoundedInterpretationId, BoundedString, BoundedTag>
 where
 	AccountId: Encode + Decode,
 {
 	pub author: AccountId,
 	pub state: ProposalState,
-	pub template_id: ItemTemplateId,
-	pub change_set: Vec<Change<BoundedResource, BoundedString>>,
+	pub template_id: TemplateId,
+	pub change_set: Vec<Change<BoundedInterpretationId, BoundedString, BoundedTag>>,
 }

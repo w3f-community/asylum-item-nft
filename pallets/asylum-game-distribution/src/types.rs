@@ -1,11 +1,11 @@
 use super::*;
-use asylum_traits::primitives::ItemTemplateId;
+use asylum_traits::primitives::TemplateId;
 use frame_support::{traits::Get, BoundedVec};
 use scale_info::TypeInfo;
 use sp_std::collections::btree_set::BTreeSet;
 
 pub(super) type GameDetailsFor<T> =
-	GameDetails<<T as SystemConfig>::AccountId, BalanceOf<T>, ItemTemplateId>;
+	GameDetails<<T as SystemConfig>::AccountId, BalanceOf<T>, TemplateId>;
 pub(super) type TicketDetailsFor<T> = TicketDetails<<T as SystemConfig>::AccountId>;
 
 #[derive(Clone, Encode, Decode, Eq, PartialEq, RuntimeDebug, TypeInfo)]

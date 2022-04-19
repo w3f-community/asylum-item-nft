@@ -1,14 +1,14 @@
 use crate::{
-	primitives::{ItemTemplateId, ProposalId},
+	primitives::{ProposalId, TemplateId},
 	Change,
 };
 use sp_runtime::DispatchError;
 use sp_std::vec::Vec;
 
-pub trait Proposal<AccountId, BoundedResource, BoundedString> {
+pub trait Proposal<AccountId, BoundedInterpretationId, BoundedString, BoundedTag> {
 	fn submit_proposal(
 		author: AccountId,
-		template_id: ItemTemplateId,
-		change_set: Vec<Change<BoundedResource, BoundedString>>,
+		template_id: TemplateId,
+		change_set: Vec<Change<BoundedInterpretationId, BoundedString, BoundedTag>>,
 	) -> Result<ProposalId, DispatchError>;
 }

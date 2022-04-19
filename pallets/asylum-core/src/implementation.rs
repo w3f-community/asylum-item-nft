@@ -1,5 +1,5 @@
 use asylum_traits::{
-	primitives::{InterpretationTypeId, ItemId, ItemTemplateId, ProposalId},
+	primitives::{ItemId, ProposalId, TemplateId},
 	*,
 };
 use frame_support::{ensure, traits::tokens::nonfungibles::Inspect};
@@ -10,45 +10,37 @@ use sp_std::vec::Vec;
 
 use super::*;
 
-impl<T: Config> Interpretable<StringLimitOf<T>> for Pallet<T>
+impl<T: Config> Interpretable<StringLimitOf<T>, TagLimitOf<T>> for Pallet<T>
 where
-	T: pallet_uniques::Config<ClassId = ItemTemplateId, InstanceId = ItemId>
-		+ pallet_rmrk_core::Config,
+	T: pallet_uniques::Config<ClassId = TemplateId, InstanceId = ItemId> + pallet_rmrk_core::Config,
 {
-	fn interpretation_type_create(
-		type_name: &StringLimitOf<T>,
+	fn interpretation_tag_create(
+		tag: &TagLimitOf<T>,
 		metadata: StringLimitOf<T>,
-	) -> Result<InterpretationTypeId, DispatchError> {
-		ensure!(
-			!IntepretationTypeNames::<T>::contains_key(&type_name),
-			Error::<T>::InterpretationTypeAlreadyExist
-		);
-		let type_id = Self::get_next_interpretation_type_id()?;
-		let type_info = IntepretationTypeInfo { metadata };
-		IntepretationTypeNames::<T>::insert(type_name, type_id);
-		IntepretationTypes::<T>::insert(type_id, type_info);
-		Ok(type_id)
+	) -> DispatchResult {
+		ensure!(!Tags::<T>::contains_key(&tag), Error::<T>::TagAlreadyExists);
+		let type_info = TagInfo { metadata };
+		Tags::<T>::insert(&tag, type_info);
+		Ok(())
 	}
 }
 
 impl<T: Config> Item<T::AccountId, StringLimitOf<T>, StringLimitOf<T>> for Pallet<T>
 where
-	T: pallet_uniques::Config<ClassId = ItemTemplateId, InstanceId = ItemId>
-		+ pallet_rmrk_core::Config,
+	T: pallet_uniques::Config<ClassId = TemplateId, InstanceId = ItemId> + pallet_rmrk_core::Config,
 {
 	fn item_mint_from_template(
 		sender: T::AccountId,
-		template_id: ItemTemplateId,
+		template_id: TemplateId,
 		item_id: ItemId,
-	) -> Result<(ItemTemplateId, ItemId), DispatchError> {
-		for ((type_id, _), IntepretationInfo { id, src, metadata }) in
-			TemplateIntepretations::<T>::iter_prefix((template_id,))
-		{
+	) -> Result<(TemplateId, ItemId), DispatchError> {
+		TemplateIntepretations::<T>::iter_prefix(template_id).try_for_each(|(interpretation_id, (IntepretationInfo { src, metadata, .. }, tags))| -> DispatchResult {
+			ItemIntepretations::<T>::insert((template_id, item_id, &interpretation_id), tags);
 			pallet_rmrk_core::Pallet::<T>::resource_add(
 				sender.clone(),
 				template_id,
 				item_id,
-				id.clone(),
+				interpretation_id,
 				None,
 				src,
 				metadata,
@@ -57,22 +49,22 @@ where
 				None,
 				None,
 			)?;
-			ItemIntepretations::<T>::insert((template_id, item_id, type_id, &id), ());
-		}
+			Ok(())
+		})?;
 		Ok((template_id, item_id))
 	}
 
 	fn item_burn(
-		template_id: ItemTemplateId,
+		template_id: TemplateId,
 		item_id: ItemId,
-	) -> Result<(ItemTemplateId, ItemId), DispatchError> {
+	) -> Result<(TemplateId, ItemId), DispatchError> {
 		ItemIntepretations::<T>::remove_prefix((template_id, item_id), None);
 		Ok((template_id, item_id))
 	}
 
 	fn item_accept_update(
 		sender: T::AccountId,
-		template_id: ItemTemplateId,
+		template_id: TemplateId,
 		item_id: ItemId,
 	) -> DispatchResult {
 		ensure!(
@@ -109,35 +101,40 @@ where
 	}
 }
 
-impl<T: Config> ItemTemplate<T::AccountId, StringLimitOf<T>, BoundedResourceOf<T>> for Pallet<T>
+impl<T: Config>
+	ItemTemplate<T::AccountId, StringLimitOf<T>, BoundedInterpretationOf<T>, TagLimitOf<T>>
+	for Pallet<T>
 where
-	T: pallet_uniques::Config<ClassId = ItemTemplateId, InstanceId = ItemId>
-		+ pallet_rmrk_core::Config,
+	T: pallet_uniques::Config<ClassId = TemplateId, InstanceId = ItemId> + pallet_rmrk_core::Config,
 {
 	fn template_create(
-		template_id: ItemTemplateId,
+		template_id: TemplateId,
 		interpretations: Vec<
-			Interpretation<StringLimitOf<T>, BoundedResourceOf<T>, StringLimitOf<T>>,
+			Interpretation<BoundedInterpretationOf<T>, StringLimitOf<T>, TagLimitOf<T>>,
 		>,
-	) -> Result<ItemTemplateId, DispatchError> {
-		for Interpretation { type_name, interpretations } in interpretations {
-			let type_id = IntepretationTypeNames::<T>::get(type_name)
-				.ok_or(Error::<T>::InterpretationTypeNotExist)?;
-
-			interpretations.into_iter().for_each(|interpretation| {
+	) -> Result<TemplateId, DispatchError> {
+		interpretations.into_iter().try_for_each(
+			|Interpretation { tags, interpretation }| -> DispatchResult {
+				ensure!(!tags.is_empty(), Error::<T>::EmptyTags);
+				tags.iter().try_for_each(|tag| -> DispatchResult {
+					ensure!(Tags::<T>::contains_key(tag), Error::<T>::UnknownTag);
+					Ok(())
+				})?;
 				TemplateIntepretations::<T>::insert(
-					(template_id, type_id, &interpretation.id),
-					&interpretation,
+					template_id,
+					&interpretation.id,
+					(&interpretation, tags),
 				);
-			});
-		}
+				Ok(())
+			},
+		)?;
 		Ok(template_id)
 	}
 
 	fn template_update(
 		sender: T::AccountId,
 		proposal_id: ProposalId,
-		template_id: ItemTemplateId,
+		template_id: TemplateId,
 	) -> DispatchResult {
 		ensure!(
 			pallet_uniques::Pallet::<T>::class_owner(&template_id) == Some(sender.clone()),
@@ -157,21 +154,21 @@ where
 		Ok(())
 	}
 
-	fn template_destroy(template_id: ItemTemplateId) -> Result<ItemTemplateId, DispatchError> {
-		TemplateIntepretations::<T>::remove_prefix((template_id,), None);
+	fn template_destroy(template_id: TemplateId) -> Result<TemplateId, DispatchError> {
+		TemplateIntepretations::<T>::remove_prefix(template_id, None);
 		Ok(template_id)
 	}
 }
 
-impl<T: Config> Proposal<T::AccountId, BoundedResourceOf<T>, StringLimitOf<T>> for Pallet<T>
+impl<T: Config> Proposal<T::AccountId, BoundedInterpretationOf<T>, StringLimitOf<T>, TagLimitOf<T>>
+	for Pallet<T>
 where
-	T: pallet_uniques::Config<ClassId = ItemTemplateId, InstanceId = ItemId>
-		+ pallet_rmrk_core::Config,
+	T: pallet_uniques::Config<ClassId = TemplateId, InstanceId = ItemId> + pallet_rmrk_core::Config,
 {
 	fn submit_proposal(
 		author: T::AccountId,
-		template_id: ItemTemplateId,
-		change_set: Vec<Change<BoundedResourceOf<T>, StringLimitOf<T>>>,
+		template_id: TemplateId,
+		change_set: Vec<Change<BoundedInterpretationOf<T>, StringLimitOf<T>, TagLimitOf<T>>>,
 	) -> Result<ProposalId, DispatchError> {
 		let proposal_id = Self::get_next_proposal_id()?;
 		let proposal_info =

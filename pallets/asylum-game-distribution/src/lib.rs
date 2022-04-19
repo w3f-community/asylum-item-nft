@@ -10,7 +10,7 @@ mod functions;
 mod impl_nonfungibles;
 mod types;
 
-use asylum_traits::primitives::ItemTemplateId;
+use asylum_traits::primitives::TemplateId;
 use codec::{Decode, Encode, HasCompact};
 use frame_support::traits::{tokens::nonfungibles::Inspect, Currency, ExistenceRequirement};
 use frame_system::Config as SystemConfig;
@@ -43,7 +43,7 @@ pub mod pallet {
 		/// The overarching event type.
 		type Event: From<Event<Self>> + IsType<<Self as frame_system::Config>::Event>;
 
-		type Uniques: Inspect<Self::AccountId, ClassId = ItemTemplateId>;
+		type Uniques: Inspect<Self::AccountId, ClassId = TemplateId>;
 
 		/// Identifier for the class of asset.
 		type GameId: Member + Parameter + Default + Copy + HasCompact;
@@ -231,11 +231,11 @@ pub mod pallet {
 		},
 		GameAddTemplateSupport {
 			game: T::GameId,
-			template_id: ItemTemplateId,
+			template_id: TemplateId,
 		},
 		GameRemoveTemplateSupport {
 			game: T::GameId,
-			template_id: ItemTemplateId,
+			template_id: TemplateId,
 		},
 	}
 
@@ -679,7 +679,7 @@ pub mod pallet {
 		pub fn add_template_support(
 			origin: OriginFor<T>,
 			#[pallet::compact] game: T::GameId,
-			#[pallet::compact] template_id: ItemTemplateId,
+			#[pallet::compact] template_id: TemplateId,
 		) -> DispatchResult {
 			let origin = ensure_signed(origin)?;
 
@@ -697,7 +697,7 @@ pub mod pallet {
 		pub fn remove_template_support(
 			origin: OriginFor<T>,
 			#[pallet::compact] game: T::GameId,
-			#[pallet::compact] template_id: ItemTemplateId,
+			#[pallet::compact] template_id: TemplateId,
 		) -> DispatchResult {
 			let origin = ensure_signed(origin)?;
 
