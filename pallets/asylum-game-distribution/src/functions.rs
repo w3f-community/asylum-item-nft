@@ -53,6 +53,7 @@ impl<T: Config> Pallet<T> {
 				instance_metadatas: 0,
 				attributes: 0,
 				is_frozen: false,
+				allow_unprivileged_mint: false,
 				templates: BTreeSet::new(),
 			},
 		);
