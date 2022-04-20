@@ -37,6 +37,11 @@ pub mod pallet {
 	pub type BalanceOf<T> =
 		<<T as Config>::Currency as Currency<<T as frame_system::Config>::AccountId>>::Balance;
 
+	pub type BoundedDataOf<T> = BoundedVec<u8, <T as Config>::DataLimit>;
+	pub type BoundedKeyOf<T> = BoundedVec<u8, <T as Config>::KeyLimit>;
+	pub type BoundedValueOf<T> = BoundedVec<u8, <T as Config>::ValueLimit>;
+	pub type BoundedStringOf<T> = BoundedVec<u8, <T as Config>::StringLimit>;
+
 	#[pallet::config]
 	/// The module configuration trait.
 	pub trait Config: frame_system::Config {
@@ -52,6 +57,10 @@ pub mod pallet {
 		type TicketId: Member + Parameter + Default + Copy + HasCompact + From<u16>;
 
 		type Currency: Currency<Self::AccountId>;
+
+		/// The maximum length of data stored on-chain.
+		#[pallet::constant]
+		type DataLimit: Get<u32>;
 
 		/// The maximum length of data stored on-chain.
 		#[pallet::constant]
@@ -111,8 +120,13 @@ pub mod pallet {
 
 	#[pallet::storage]
 	/// Metadata of an asset class.
-	pub(super) type GameMetadataOf<T: Config> =
-		StorageMap<_, Blake2_128Concat, T::GameId, GameMetadata<T::StringLimit>, OptionQuery>;
+	pub(super) type GameMetadataOf<T: Config> = StorageMap<
+		_,
+		Blake2_128Concat,
+		T::GameId,
+		GameMetadata<BoundedDataOf<T>, BoundedStringOf<T>>,
+		OptionQuery,
+	>;
 
 	#[pallet::storage]
 	/// Metadata of an asset instance.
@@ -122,7 +136,7 @@ pub mod pallet {
 		T::GameId,
 		Blake2_128Concat,
 		T::TicketId,
-		TicketMetadata<T::StringLimit>,
+		TicketMetadata<BoundedDataOf<T>>,
 		OptionQuery,
 	>;
 
@@ -133,9 +147,9 @@ pub mod pallet {
 		(
 			NMapKey<Blake2_128Concat, T::GameId>,
 			NMapKey<Blake2_128Concat, Option<T::TicketId>>,
-			NMapKey<Blake2_128Concat, BoundedVec<u8, T::KeyLimit>>,
+			NMapKey<Blake2_128Concat, BoundedKeyOf<T>>,
 		),
-		BoundedVec<u8, T::ValueLimit>,
+		BoundedValueOf<T>,
 		OptionQuery,
 	>;
 
@@ -204,7 +218,9 @@ pub mod pallet {
 		},
 		GameMetadataSet {
 			game: T::GameId,
-			data: BoundedVec<u8, T::StringLimit>,
+			data: BoundedDataOf<T>,
+			title: BoundedStringOf<T>,
+			genre: BoundedStringOf<T>,
 		},
 		GameMetadataCleared {
 			game: T::GameId,
@@ -212,7 +228,7 @@ pub mod pallet {
 		TicketMetadataSet {
 			game: T::GameId,
 			ticket: T::TicketId,
-			data: BoundedVec<u8, T::StringLimit>,
+			data: BoundedDataOf<T>,
 		},
 		TicketMetadataCleared {
 			game: T::GameId,
@@ -221,13 +237,13 @@ pub mod pallet {
 		AttributeSet {
 			game: T::GameId,
 			maybe_ticket: Option<T::TicketId>,
-			key: BoundedVec<u8, T::KeyLimit>,
-			value: BoundedVec<u8, T::ValueLimit>,
+			key: BoundedKeyOf<T>,
+			value: BoundedValueOf<T>,
 		},
 		AttributeCleared {
 			game: T::GameId,
 			maybe_ticket: Option<T::TicketId>,
-			key: BoundedVec<u8, T::KeyLimit>,
+			key: BoundedKeyOf<T>,
 		},
 		GameAddTemplateSupport {
 			game: T::GameId,
@@ -236,6 +252,14 @@ pub mod pallet {
 		GameRemoveTemplateSupport {
 			game: T::GameId,
 			template_id: TemplateId,
+		},
+		AllowUnprivilegedMint {
+			game: T::GameId,
+			allow: bool,
+		},
+		SetPrice {
+			game: T::GameId,
+			price: BalanceOf<T>,
 		},
 	}
 
@@ -312,6 +336,10 @@ pub mod pallet {
 			let sender = ensure_signed(origin)?;
 			let owner = T::Lookup::lookup(owner)?;
 			let game_details = Game::<T>::get(game).ok_or(Error::<T>::Unknown)?;
+			ensure!(
+				game_details.allow_unprivileged_mint || game_details.issuer == sender,
+				Error::<T>::NoPermission
+			);
 			T::Currency::transfer(
 				&sender,
 				&game_details.owner,
@@ -550,8 +578,8 @@ pub mod pallet {
 			origin: OriginFor<T>,
 			#[pallet::compact] game: T::GameId,
 			maybe_ticket: Option<T::TicketId>,
-			key: BoundedVec<u8, T::KeyLimit>,
-			value: BoundedVec<u8, T::ValueLimit>,
+			key: BoundedKeyOf<T>,
+			value: BoundedValueOf<T>,
 		) -> DispatchResult {
 			let check_owner = ensure_signed(origin)?;
 
@@ -574,7 +602,7 @@ pub mod pallet {
 			origin: OriginFor<T>,
 			#[pallet::compact] game: T::GameId,
 			maybe_ticket: Option<T::TicketId>,
-			key: BoundedVec<u8, T::KeyLimit>,
+			key: BoundedKeyOf<T>,
 		) -> DispatchResult {
 			let check_owner = ensure_signed(origin)?;
 
@@ -594,7 +622,7 @@ pub mod pallet {
 			origin: OriginFor<T>,
 			#[pallet::compact] game: T::GameId,
 			#[pallet::compact] ticket: T::TicketId,
-			data: BoundedVec<u8, T::StringLimit>,
+			data: BoundedDataOf<T>,
 		) -> DispatchResult {
 			let check_owner = ensure_signed(origin)?;
 
@@ -641,7 +669,9 @@ pub mod pallet {
 		pub fn set_game_metadata(
 			origin: OriginFor<T>,
 			#[pallet::compact] game: T::GameId,
-			data: BoundedVec<u8, T::StringLimit>,
+			data: BoundedDataOf<T>,
+			title: BoundedStringOf<T>,
+			genre: BoundedStringOf<T>,
 		) -> DispatchResult {
 			let check_owner = ensure_signed(origin)?;
 
@@ -651,9 +681,13 @@ pub mod pallet {
 			GameMetadataOf::<T>::try_mutate_exists(game, |metadata| {
 				Game::<T>::insert(&game, details);
 
-				*metadata = Some(GameMetadata { data: data.clone() });
+				*metadata = Some(GameMetadata {
+					data: data.clone(),
+					title: title.clone(),
+					genre: genre.clone(),
+				});
 
-				Self::deposit_event(Event::GameMetadataSet { game, data });
+				Self::deposit_event(Event::GameMetadataSet { game, data, title, genre });
 				Ok(())
 			})
 		}
@@ -671,6 +705,40 @@ pub mod pallet {
 			GameMetadataOf::<T>::try_mutate_exists(game, |metadata| {
 				metadata.take();
 				Self::deposit_event(Event::GameMetadataCleared { game });
+				Ok(())
+			})
+		}
+
+		#[pallet::weight(10_000)]
+		pub fn set_allow_unpriviledged_mint(
+			origin: OriginFor<T>,
+			#[pallet::compact] game: T::GameId,
+			allow: bool,
+		) -> DispatchResult {
+			let origin = ensure_signed(origin)?;
+			Game::<T>::try_mutate_exists(game, |maybe_details| {
+				let details = maybe_details.as_mut().ok_or(Error::<T>::Unknown)?;
+				ensure!(origin == details.owner, Error::<T>::NoPermission);
+
+				details.allow_unprivileged_mint = allow;
+				Self::deposit_event(Event::AllowUnprivilegedMint { game, allow });
+				Ok(())
+			})
+		}
+
+		#[pallet::weight(10_000)]
+		pub fn set_price(
+			origin: OriginFor<T>,
+			#[pallet::compact] game: T::GameId,
+			price: BalanceOf<T>,
+		) -> DispatchResult {
+			let origin = ensure_signed(origin)?;
+			Game::<T>::try_mutate_exists(game, |maybe_details| {
+				let details = maybe_details.as_mut().ok_or(Error::<T>::Unknown)?;
+				ensure!(origin == details.admin, Error::<T>::NoPermission);
+
+				details.price = price;
+				Self::deposit_event(Event::SetPrice { game, price });
 				Ok(())
 			})
 		}

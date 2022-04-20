@@ -1,6 +1,10 @@
 use super::*;
 use crate::mock::*;
-use frame_support::{assert_noop, assert_ok, traits::Currency};
+use frame_support::{
+	assert_noop, assert_ok,
+	traits::{Currency, Get},
+	BoundedVec,
+};
 use sp_std::prelude::*;
 
 fn tickets() -> Vec<(u64, u32, u32)> {
@@ -51,6 +55,13 @@ fn attributes(class: u32) -> Vec<(Option<u32>, Vec<u8>, Vec<u8>)> {
 	s
 }
 
+fn bounded<T>(string: &str) -> BoundedVec<u8, T>
+where
+	T: Get<u32>,
+{
+	TryInto::<BoundedVec<u8, T>>::try_into(string.as_bytes().to_vec()).unwrap()
+}
+
 #[test]
 fn basic_setup_works() {
 	new_test_ext().execute_with(|| {
@@ -63,6 +74,7 @@ fn basic_minting_should_work() {
 	new_test_ext().execute_with(|| {
 		assert_ok!(GameDistribution::create_game(Origin::signed(1), 0, 1, 1000));
 		assert_eq!(games(), vec![(1, 0)]);
+		assert_ok!(GameDistribution::set_allow_unpriviledged_mint(Origin::signed(1), 0, true));
 		assert_noop!(
 			GameDistribution::mint_ticket(Origin::signed(2), 0, 42, 1),
 			pallet_balances::Error::<Test>::InsufficientBalance
@@ -87,7 +99,13 @@ fn lifecycle_should_work() {
 		Balances::make_free_balance_be(&1, 100);
 		assert_ok!(GameDistribution::create_game(Origin::signed(1), 0, 1, 1000));
 		assert_eq!(games(), vec![(1, 0)]);
-		assert_ok!(GameDistribution::set_game_metadata(Origin::signed(1), 0, bvec![0, 0]));
+		assert_ok!(GameDistribution::set_game_metadata(
+			Origin::signed(1),
+			0,
+			bounded("ipfs://"),
+			bounded("my game"),
+			bounded("battle royal")
+		));
 		assert!(GameMetadataOf::<Test>::contains_key(0));
 
 		assert_ok!(GameDistribution::mint_ticket(Origin::signed(1), 0, 42, 10));
@@ -137,9 +155,21 @@ fn mint_should_work() {
 	new_test_ext().execute_with(|| {
 		assert_ok!(GameDistribution::create_game(Origin::signed(1), 0, 1, 1000));
 		assert_ok!(GameDistribution::mint_ticket(Origin::signed(1), 0, 42, 1));
+
+		Balances::make_free_balance_be(&2, 1001);
+		assert_noop!(
+			GameDistribution::mint_ticket(Origin::signed(2), 0, 101, 2),
+			Error::<Test>::NoPermission
+		);
+		assert_noop!(
+			GameDistribution::set_allow_unpriviledged_mint(Origin::signed(2), 0, true),
+			Error::<Test>::NoPermission
+		);
+		assert_ok!(GameDistribution::set_allow_unpriviledged_mint(Origin::signed(1), 0, true));
+		assert_ok!(GameDistribution::mint_ticket(Origin::signed(2), 0, 101, 2));
 		assert_eq!(GameDistribution::owner(0, 42).unwrap(), 1);
 		assert_eq!(games(), vec![(1, 0)]);
-		assert_eq!(tickets(), vec![(1, 0, 42)]);
+		assert_eq!(tickets(), vec![(1, 0, 42), (2, 0, 101)]);
 	});
 }
 
@@ -188,6 +218,7 @@ fn freezing_should_work() {
 fn origin_guards_should_work() {
 	new_test_ext().execute_with(|| {
 		assert_ok!(GameDistribution::create_game(Origin::signed(1), 0, 1, 1000));
+		assert_ok!(GameDistribution::set_allow_unpriviledged_mint(Origin::signed(1), 0, true));
 		assert_ok!(GameDistribution::mint_ticket(Origin::signed(1), 0, 42, 1));
 		assert_noop!(
 			GameDistribution::transfer_game_ownership(Origin::signed(2), 0, 2),
@@ -237,11 +268,20 @@ fn transfer_owner_should_work() {
 		);
 
 		// Mint and set metadata now and make sure that deposit gets transferred back.
-		assert_ok!(GameDistribution::set_game_metadata(Origin::signed(2), 0, bvec![0u8; 20],));
+		assert_ok!(GameDistribution::set_game_metadata(
+			Origin::signed(2),
+			0,
+			bounded("ipfs://"),
+			bounded("my game"),
+			bounded("battle royal")
+		));
 		assert_ok!(GameDistribution::mint_ticket(Origin::signed(1), 0, 42, 1));
-		assert_ok!(
-			GameDistribution::set_ticket_metadata(Origin::signed(2), 0, 42, bvec![0u8; 20],)
-		);
+		assert_ok!(GameDistribution::set_ticket_metadata(
+			Origin::signed(2),
+			0,
+			42,
+			bounded("ipfs://")
+		));
 		assert_ok!(GameDistribution::transfer_game_ownership(Origin::signed(2), 0, 3));
 		assert_eq!(games(), vec![(3, 0)]);
 	});
@@ -267,21 +307,45 @@ fn set_game_metadata_should_work() {
 	new_test_ext().execute_with(|| {
 		// Cannot add metadata to unknown asset
 		assert_noop!(
-			GameDistribution::set_game_metadata(Origin::signed(1), 0, bvec![0u8; 20]),
+			GameDistribution::set_game_metadata(
+				Origin::signed(1),
+				0,
+				bounded("ipfs://"),
+				bounded("my game"),
+				bounded("battle royal")
+			),
 			Error::<Test>::Unknown,
 		);
 		assert_ok!(GameDistribution::create_game(Origin::signed(1), 0, 1, 1000));
 		// Cannot add metadata to unowned asset
 		assert_noop!(
-			GameDistribution::set_game_metadata(Origin::signed(2), 0, bvec![0u8; 20]),
+			GameDistribution::set_game_metadata(
+				Origin::signed(2),
+				0,
+				bounded("ipfs://"),
+				bounded("my game"),
+				bounded("battle royal")
+			),
 			Error::<Test>::NoPermission,
 		);
 
 		// Successfully add metadata
-		assert_ok!(GameDistribution::set_game_metadata(Origin::signed(1), 0, bvec![0u8; 20],));
+		assert_ok!(GameDistribution::set_game_metadata(
+			Origin::signed(1),
+			0,
+			bounded("ipfs://new"),
+			bounded("my game"),
+			bounded("battle royal")
+		));
 		assert!(GameMetadataOf::<Test>::contains_key(0));
 
-		assert_ok!(GameDistribution::set_game_metadata(Origin::signed(1), 0, bvec![0u8; 15],));
+		assert_ok!(GameDistribution::set_game_metadata(
+			Origin::signed(1),
+			0,
+			bounded("ipfs://"),
+			bounded("my game"),
+			bounded("battle royal")
+		));
 
 		assert_noop!(
 			GameDistribution::clear_game_metadata(Origin::signed(2), 0),
@@ -407,7 +471,7 @@ fn burn_works() {
 			GameDistribution::burn_ticket(Origin::signed(5), 0, 42, Some(5)),
 			Error::<Test>::Unknown
 		);
-
+		assert_ok!(GameDistribution::set_allow_unpriviledged_mint(Origin::signed(1), 0, true));
 		assert_ok!(GameDistribution::mint_ticket(Origin::signed(2), 0, 42, 5));
 		assert_ok!(GameDistribution::mint_ticket(Origin::signed(2), 0, 69, 5));
 
@@ -518,5 +582,21 @@ fn templates_support() {
 		assert_ok!(GameDistribution::add_template_support(Origin::signed(1), 0, 102));
 		assert_ok!(GameDistribution::remove_template_support(Origin::signed(1), 0, 101));
 		assert_ok!(GameDistribution::remove_template_support(Origin::signed(1), 0, 102));
+	});
+}
+
+#[test]
+fn set_price() {
+	new_test_ext().execute_with(|| {
+		assert_ok!(GameDistribution::create_game(Origin::signed(1), 0, 1, 0));
+		assert_ok!(GameDistribution::set_allow_unpriviledged_mint(Origin::signed(1), 0, true));
+		assert_ok!(GameDistribution::mint_ticket(Origin::signed(2), 0, 42, 2));
+		assert_ok!(GameDistribution::set_price(Origin::signed(1), 0, 100));
+		assert_noop!(
+			GameDistribution::mint_ticket(Origin::signed(2), 0, 42, 2),
+			pallet_balances::Error::<Test>::InsufficientBalance
+		);
+		Balances::make_free_balance_be(&2, 101);
+		assert_ok!(GameDistribution::mint_ticket(Origin::signed(2), 0, 101, 2));
 	});
 }

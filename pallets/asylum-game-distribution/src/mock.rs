@@ -107,6 +107,7 @@ impl Config for Test {
 	type GameId = u32;
 	type TicketId = u32;
 	type Currency = Balances;
+	type DataLimit = ConstU32<50>;
 	type StringLimit = ConstU32<50>;
 	type KeyLimit = ConstU32<50>;
 	type ValueLimit = ConstU32<50>;

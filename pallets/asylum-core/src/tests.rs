@@ -100,10 +100,7 @@ fn create_template() {
 				tags: tags.clone(),
 				interpretation: interpretation(PREFIX_3D, COMICS, MOCK_HASH),
 			},
-			Interpretation {
-				tags,
-				interpretation: interpretation(PREFIX_3D, ANIME, MOCK_HASH),
-			},
+			Interpretation { tags, interpretation: interpretation(PREFIX_3D, ANIME, MOCK_HASH) },
 		],
 	));
 }

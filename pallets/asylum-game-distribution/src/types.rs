@@ -1,6 +1,5 @@
 use super::*;
 use asylum_traits::primitives::TemplateId;
-use frame_support::{traits::Get, BoundedVec};
 use scale_info::TypeInfo;
 use sp_std::collections::btree_set::BTreeSet;
 
@@ -30,6 +29,8 @@ pub struct GameDetails<AccountId, Balance, TemplateId> {
 	pub(super) is_frozen: bool,
 	/// Set of supported templates
 	pub(super) templates: BTreeSet<TemplateId>,
+	/// Allow tickets minting by non-issuer account
+	pub(super) allow_unprivileged_mint: bool,
 }
 
 /// Witness data for the destroy transactions.
@@ -68,19 +69,19 @@ pub struct TicketDetails<AccountId> {
 }
 
 #[derive(Clone, Encode, Decode, Eq, PartialEq, RuntimeDebug, Default, TypeInfo)]
-#[scale_info(skip_type_params(StringLimit))]
-pub struct GameMetadata<StringLimit: Get<u32>> {
+pub struct GameMetadata<BoundedData, BoundedString> {
 	/// General information concerning this asset. Limited in length by `StringLimit`. This will
 	/// generally be either a JSON dump or the hash of some JSON which can be found on a
 	/// hash-addressable global publication system such as IPFS.
-	pub(super) data: BoundedVec<u8, StringLimit>,
+	pub(super) data: BoundedData,
+	pub(super) title: BoundedString,
+	pub(super) genre: BoundedString,
 }
 
 #[derive(Clone, Encode, Decode, Eq, PartialEq, RuntimeDebug, Default, TypeInfo)]
-#[scale_info(skip_type_params(StringLimit))]
-pub struct TicketMetadata<StringLimit: Get<u32>> {
+pub struct TicketMetadata<BoundedData> {
 	/// General information concerning this asset. Limited in length by `StringLimit`. This will
 	/// generally be either a JSON dump or the hash of some JSON which can be found on a
 	/// hash-addressable global publication system such as IPFS.
-	pub(super) data: BoundedVec<u8, StringLimit>,
+	pub(super) data: BoundedData,
 }
