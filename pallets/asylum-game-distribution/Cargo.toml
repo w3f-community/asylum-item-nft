@@ -79,6 +79,12 @@ git = 'https://github.com/paritytech/substrate.git'
 branch = "polkadot-v0.9.17"
 version = '4.0.0-dev'
 
+[dependencies.pallet-assets]
+default-features = false
+git = 'https://github.com/paritytech/substrate.git'
+branch = "polkadot-v0.9.17"
+version = '4.0.0-dev'
+
 [features]
 default = ["std"]
 std = [
@@ -90,5 +96,6 @@ std = [
 	"frame-system/std",
     'pallet-balances/std',
 	'pallet-uniques/std',
+	'pallet-assets/std',
 ]
 try-runtime = ["frame-support/try-runtime"]

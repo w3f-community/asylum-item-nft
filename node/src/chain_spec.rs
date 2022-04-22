@@ -136,6 +136,7 @@ fn testnet_genesis(
 			key: Some(root_key),
 		},
 		transaction_payment: Default::default(),
+		assets: Default::default(),
 		asylum_core: AsylumCoreConfig::new(vec![(
 			"type_2D".to_string(),
 			"ipfs://type_2D_metadata_hash".to_string(),

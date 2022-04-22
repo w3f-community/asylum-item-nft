@@ -12,12 +12,13 @@ mod types;
 
 use asylum_traits::primitives::TemplateId;
 use codec::{Decode, Encode, HasCompact};
-use frame_support::traits::{tokens::nonfungibles::Inspect, Currency, ExistenceRequirement};
+use frame_support::traits::{tokens::{nonfungibles::Inspect as NFTInspect, fungibles::Inspect as FungibleInspect}, Currency, ExistenceRequirement};
 use frame_system::Config as SystemConfig;
 use sp_runtime::{
-	traits::{Saturating, StaticLookup},
+	traits::{Saturating, StaticLookup, Zero},
 	ArithmeticError, RuntimeDebug,
 };
+use sp_std::collections::btree_set::BTreeSet;
 use sp_std::prelude::*;
 
 pub use pallet::*;
@@ -36,6 +37,12 @@ pub mod pallet {
 
 	pub type BalanceOf<T> =
 		<<T as Config>::Currency as Currency<<T as frame_system::Config>::AccountId>>::Balance;
+	pub type AssetIdOf<T> = <T as Config>::AssetId;	
+
+	pub type BoundedDataOf<T> = BoundedVec<u8, <T as Config>::DataLimit>;
+	pub type BoundedKeyOf<T> = BoundedVec<u8, <T as Config>::KeyLimit>;
+	pub type BoundedValueOf<T> = BoundedVec<u8, <T as Config>::ValueLimit>;
+	pub type BoundedStringOf<T> = BoundedVec<u8, <T as Config>::StringLimit>;
 
 	pub type BoundedDataOf<T> = BoundedVec<u8, <T as Config>::DataLimit>;
 	pub type BoundedKeyOf<T> = BoundedVec<u8, <T as Config>::KeyLimit>;
@@ -48,7 +55,19 @@ pub mod pallet {
 		/// The overarching event type.
 		type Event: From<Event<Self>> + IsType<<Self as frame_system::Config>::Event>;
 
-		type Uniques: Inspect<Self::AccountId, ClassId = TemplateId>;
+		/// Inspect pallet uniques to check if supported templates really exist
+		type Uniques: NFTInspect<Self::AccountId, ClassId = TemplateId>;
+
+		/// Additional data to be stored with an account's asset balance.
+		type AssetId: Parameter
+		+ Member
+		+ MaybeSerializeDeserialize
+		+ Ord
+		+ MaxEncodedLen
+		+ Copy;
+
+		/// Inspect pallet assets to check if game's assets really exist
+		type Assets: FungibleInspect<Self::AccountId, AssetId = Self::AssetId>;
 
 		/// Identifier for the class of asset.
 		type GameId: Member + Parameter + Default + Copy + HasCompact;
@@ -301,7 +320,7 @@ pub mod pallet {
 			origin: OriginFor<T>,
 			#[pallet::compact] game: T::GameId,
 			admin: <T::Lookup as StaticLookup>::Source,
-			price: BalanceOf<T>,
+			price: Option<BalanceOf<T>>,
 		) -> DispatchResult {
 			let owner = ensure_signed(origin)?;
 			let admin = T::Lookup::lookup(admin)?;
@@ -340,12 +359,15 @@ pub mod pallet {
 				game_details.allow_unprivileged_mint || game_details.issuer == sender,
 				Error::<T>::NoPermission
 			);
-			T::Currency::transfer(
-				&sender,
-				&game_details.owner,
-				game_details.price,
-				ExistenceRequirement::KeepAlive,
-			)?;
+			if let Some(price) = game_details.price {
+				T::Currency::transfer(
+					&sender,
+					&game_details.owner,
+					price,
+					ExistenceRequirement::KeepAlive,
+				)?;
+			}
+
 			Self::do_mint_ticket(game, ticket, owner, |_| Ok(()))
 		}
 
@@ -737,7 +759,7 @@ pub mod pallet {
 				let details = maybe_details.as_mut().ok_or(Error::<T>::Unknown)?;
 				ensure!(origin == details.admin, Error::<T>::NoPermission);
 
-				details.price = price;
+				details.price = Some(price);
 				Self::deposit_event(Event::SetPrice { game, price });
 				Ok(())
 			})
@@ -755,7 +777,12 @@ pub mod pallet {
 				let details = maybe_details.as_mut().ok_or(Error::<T>::Unknown)?;
 				ensure!(origin == details.owner, Error::<T>::NoPermission);
 				ensure!(T::Uniques::class_owner(&template_id).is_some(), Error::<T>::Unknown);
-				details.templates.insert(template_id);
+				if let Some(templates) = &mut details.templates {
+					templates.insert(template_id);
+				} else {
+					details.templates = Some(BTreeSet::from([template_id]));
+				}
+				
 				Self::deposit_event(Event::GameAddTemplateSupport { game, template_id });
 				Ok(())
 			})
@@ -772,8 +799,53 @@ pub mod pallet {
 			Game::<T>::try_mutate_exists(game, |maybe_details| {
 				let details = maybe_details.as_mut().ok_or(Error::<T>::Unknown)?;
 				ensure!(origin == details.owner, Error::<T>::NoPermission);
-				details.templates.remove(&template_id);
+				if let Some(templates) = &mut details.templates {
+					templates.remove(&template_id);
+				}
+
 				Self::deposit_event(Event::GameRemoveTemplateSupport { game, template_id });
+				Ok(())
+			})
+		}
+
+		#[pallet::weight(10_000)]
+		pub fn add_asset_support(
+			origin: OriginFor<T>,
+			#[pallet::compact] game: T::GameId,
+			asset_id: T::AssetId,
+		) -> DispatchResult {
+			let origin = ensure_signed(origin)?;
+
+			Game::<T>::try_mutate_exists(game, |maybe_details| {
+				let details = maybe_details.as_mut().ok_or(Error::<T>::Unknown)?;
+				ensure!(origin == details.owner, Error::<T>::NoPermission);
+				ensure!(T::Assets::total_issuance(asset_id).is_zero(), Error::<T>::Unknown);
+				if let Some(assets) = &mut details.assets {
+					assets.insert(asset_id);
+				} else {
+					details.assets = Some(BTreeSet::from([asset_id]));
+				}
+				
+				//Self::deposit_event(Event::GameAddTemplateSupport { game, template_id });
+				Ok(())
+			})
+		}
+
+		#[pallet::weight(10_000)]
+		pub fn remove_asset_support(
+			origin: OriginFor<T>,
+			#[pallet::compact] game: T::GameId,
+			asset_id: T::AssetId,
+		) -> DispatchResult {
+			let origin = ensure_signed(origin)?;
+
+			Game::<T>::try_mutate_exists(game, |maybe_details| {
+				let details = maybe_details.as_mut().ok_or(Error::<T>::Unknown)?;
+				ensure!(origin == details.owner, Error::<T>::NoPermission);
+				if let Some(assets) = &mut details.assets {
+					assets.remove(&asset_id);
+				}
+				//Self::deposit_event(Event::GameRemoveTemplateSupport { game, template_id });
 				Ok(())
 			})
 		}

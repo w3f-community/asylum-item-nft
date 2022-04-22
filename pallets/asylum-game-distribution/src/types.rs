@@ -2,13 +2,12 @@ use super::*;
 use asylum_traits::primitives::TemplateId;
 use scale_info::TypeInfo;
 use sp_std::collections::btree_set::BTreeSet;
-
 pub(super) type GameDetailsFor<T> =
-	GameDetails<<T as SystemConfig>::AccountId, BalanceOf<T>, TemplateId>;
+	GameDetails<<T as SystemConfig>::AccountId, BalanceOf<T>, AssetIdOf<T>>;
 pub(super) type TicketDetailsFor<T> = TicketDetails<<T as SystemConfig>::AccountId>;
 
-#[derive(Clone, Encode, Decode, Eq, PartialEq, RuntimeDebug, TypeInfo)]
-pub struct GameDetails<AccountId, Balance, TemplateId> {
+#[derive(Clone, Encode, Decode, Eq, PartialEq, RuntimeDebug, TypeInfo, Default)]
+pub struct GameDetails<AccountId, Balance, AssetId> {
 	/// Can change `owner`, `issuer`, `freezer` and `admin` accounts.
 	pub(super) owner: AccountId,
 	/// Can mint tokens.
@@ -18,7 +17,7 @@ pub struct GameDetails<AccountId, Balance, TemplateId> {
 	/// Can freeze tokens.
 	pub(super) freezer: AccountId,
 	/// Game price
-	pub(super) price: Balance,
+	pub(super) price: Option<Balance>,
 	/// The total number of outstanding instances of this asset class.
 	pub(super) instances: u32,
 	/// The total number of outstanding instance metadata of this asset class.
@@ -28,9 +27,12 @@ pub struct GameDetails<AccountId, Balance, TemplateId> {
 	/// Whether the asset is frozen for non-admin transfers.
 	pub(super) is_frozen: bool,
 	/// Set of supported templates
-	pub(super) templates: BTreeSet<TemplateId>,
+	pub(super) templates: Option<BTreeSet<TemplateId>>, // Maybe we should use Vec here
+	/// Assets associated with this game
+	pub(super) assets: Option<BTreeSet<AssetId>>, // Maybe we should use Vec here
 	/// Allow tickets minting by non-issuer account
 	pub(super) allow_unprivileged_mint: bool,
+
 }
 
 /// Witness data for the destroy transactions.
@@ -47,7 +49,7 @@ pub struct DestroyWitness {
 	pub attributes: u32,
 }
 
-impl<AccountId, Balance, ItemTemplateId> GameDetails<AccountId, Balance, ItemTemplateId> {
+impl<AccountId, Balance, AssetId> GameDetails<AccountId, Balance, AssetId> {
 	pub fn destroy_witness(&self) -> DestroyWitness {
 		DestroyWitness {
 			instances: self.instances,
