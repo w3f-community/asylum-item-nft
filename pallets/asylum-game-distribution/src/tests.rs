@@ -72,7 +72,7 @@ fn basic_setup_works() {
 #[test]
 fn basic_minting_should_work() {
 	new_test_ext().execute_with(|| {
-		assert_ok!(GameDistribution::create_game(Origin::signed(1), 0, 1, 1000));
+		assert_ok!(GameDistribution::create_game(Origin::signed(1), 0, 1, Some(1000)));
 		assert_eq!(games(), vec![(1, 0)]);
 		assert_ok!(GameDistribution::set_allow_unpriviledged_mint(Origin::signed(1), 0, true));
 		assert_noop!(
@@ -85,7 +85,7 @@ fn basic_minting_should_work() {
 		assert_eq!(Balances::free_balance(&1), 1000);
 		assert_eq!(Balances::free_balance(&2), 1);
 
-		assert_ok!(GameDistribution::create_game(Origin::signed(2), 1, 2, 1000));
+		assert_ok!(GameDistribution::create_game(Origin::signed(2), 1, 2, Some(1000)));
 		assert_eq!(games(), vec![(1, 0), (2, 1)]);
 		// free mint because game owner and minter are the same account
 		assert_ok!(GameDistribution::mint_ticket(Origin::signed(2), 1, 69, 1));
@@ -97,7 +97,7 @@ fn basic_minting_should_work() {
 fn lifecycle_should_work() {
 	new_test_ext().execute_with(|| {
 		Balances::make_free_balance_be(&1, 100);
-		assert_ok!(GameDistribution::create_game(Origin::signed(1), 0, 1, 1000));
+		assert_ok!(GameDistribution::create_game(Origin::signed(1), 0, 1, Some(1000)));
 		assert_eq!(games(), vec![(1, 0)]);
 		assert_ok!(GameDistribution::set_game_metadata(
 			Origin::signed(1),
@@ -139,7 +139,7 @@ fn lifecycle_should_work() {
 fn destroy_with_bad_witness_should_not_work() {
 	new_test_ext().execute_with(|| {
 		Balances::make_free_balance_be(&1, 100);
-		assert_ok!(GameDistribution::create_game(Origin::signed(1), 0, 1, 1000));
+		assert_ok!(GameDistribution::create_game(Origin::signed(1), 0, 1, Some(1000)));
 
 		let w = Game::<Test>::get(0).unwrap().destroy_witness();
 		assert_ok!(GameDistribution::mint_ticket(Origin::signed(1), 0, 42, 1));
@@ -153,7 +153,7 @@ fn destroy_with_bad_witness_should_not_work() {
 #[test]
 fn mint_should_work() {
 	new_test_ext().execute_with(|| {
-		assert_ok!(GameDistribution::create_game(Origin::signed(1), 0, 1, 1000));
+		assert_ok!(GameDistribution::create_game(Origin::signed(1), 0, 1, Some(1000)));
 		assert_ok!(GameDistribution::mint_ticket(Origin::signed(1), 0, 42, 1));
 
 		Balances::make_free_balance_be(&2, 1001);
@@ -176,7 +176,7 @@ fn mint_should_work() {
 #[test]
 fn transfer_should_work() {
 	new_test_ext().execute_with(|| {
-		assert_ok!(GameDistribution::create_game(Origin::signed(1), 0, 1, 1000));
+		assert_ok!(GameDistribution::create_game(Origin::signed(1), 0, 1, Some(1000)));
 		assert_ok!(GameDistribution::mint_ticket(Origin::signed(1), 0, 42, 2));
 
 		assert_ok!(GameDistribution::transfer(Origin::signed(2), 0, 42, 3));
@@ -194,7 +194,7 @@ fn transfer_should_work() {
 #[test]
 fn freezing_should_work() {
 	new_test_ext().execute_with(|| {
-		assert_ok!(GameDistribution::create_game(Origin::signed(1), 0, 1, 1000));
+		assert_ok!(GameDistribution::create_game(Origin::signed(1), 0, 1, Some(1000)));
 		assert_ok!(GameDistribution::mint_ticket(Origin::signed(1), 0, 42, 1));
 		assert_ok!(GameDistribution::freeze_ticket(Origin::signed(1), 0, 42));
 		assert_noop!(
@@ -217,7 +217,7 @@ fn freezing_should_work() {
 #[test]
 fn origin_guards_should_work() {
 	new_test_ext().execute_with(|| {
-		assert_ok!(GameDistribution::create_game(Origin::signed(1), 0, 1, 1000));
+		assert_ok!(GameDistribution::create_game(Origin::signed(1), 0, 1, Some(1000)));
 		assert_ok!(GameDistribution::set_allow_unpriviledged_mint(Origin::signed(1), 0, true));
 		assert_ok!(GameDistribution::mint_ticket(Origin::signed(1), 0, 42, 1));
 		assert_noop!(
@@ -257,7 +257,7 @@ fn transfer_owner_should_work() {
 		Balances::make_free_balance_be(&1, 100);
 		Balances::make_free_balance_be(&2, 100);
 		Balances::make_free_balance_be(&3, 100);
-		assert_ok!(GameDistribution::create_game(Origin::signed(1), 0, 1, 99));
+		assert_ok!(GameDistribution::create_game(Origin::signed(1), 0, 1, Some(99)));
 		assert_eq!(games(), vec![(1, 0)]);
 		assert_ok!(GameDistribution::transfer_game_ownership(Origin::signed(1), 0, 2));
 		assert_eq!(games(), vec![(2, 0)]);
@@ -291,7 +291,7 @@ fn transfer_owner_should_work() {
 fn set_team_should_work() {
 	new_test_ext().execute_with(|| {
 		Balances::make_free_balance_be(&2, 1001);
-		assert_ok!(GameDistribution::create_game(Origin::signed(1), 0, 1, 1000));
+		assert_ok!(GameDistribution::create_game(Origin::signed(1), 0, 1, Some(1000)));
 		assert_ok!(GameDistribution::set_game_team(Origin::signed(1), 0, 2, 3, 4));
 
 		assert_ok!(GameDistribution::mint_ticket(Origin::signed(2), 0, 42, 2));
@@ -316,7 +316,7 @@ fn set_game_metadata_should_work() {
 			),
 			Error::<Test>::Unknown,
 		);
-		assert_ok!(GameDistribution::create_game(Origin::signed(1), 0, 1, 1000));
+		assert_ok!(GameDistribution::create_game(Origin::signed(1), 0, 1, Some(1000)));
 		// Cannot add metadata to unowned asset
 		assert_noop!(
 			GameDistribution::set_game_metadata(
@@ -364,7 +364,7 @@ fn set_game_metadata_should_work() {
 fn set_ticket_metadata_should_work() {
 	new_test_ext().execute_with(|| {
 		// Cannot add metadata to unknown asset
-		assert_ok!(GameDistribution::create_game(Origin::signed(1), 0, 1, 1000));
+		assert_ok!(GameDistribution::create_game(Origin::signed(1), 0, 1, Some(1000)));
 		assert_ok!(GameDistribution::mint_ticket(Origin::signed(1), 0, 42, 1));
 		// Cannot add metadata to unowned asset
 		assert_noop!(
@@ -405,7 +405,7 @@ fn set_ticket_metadata_should_work() {
 #[test]
 fn set_attribute_should_work() {
 	new_test_ext().execute_with(|| {
-		assert_ok!(GameDistribution::create_game(Origin::signed(1), 0, 1, 1000));
+		assert_ok!(GameDistribution::create_game(Origin::signed(1), 0, 1, Some(1000)));
 
 		assert_ok!(GameDistribution::set_attribute(Origin::signed(1), 0, None, bvec![0], bvec![0]));
 		assert_ok!(GameDistribution::set_attribute(
@@ -464,7 +464,7 @@ fn burn_works() {
 	new_test_ext().execute_with(|| {
 		Balances::make_free_balance_be(&1, 100);
 		Balances::make_free_balance_be(&2, 201);
-		assert_ok!(GameDistribution::create_game(Origin::signed(1), 0, 1, 100));
+		assert_ok!(GameDistribution::create_game(Origin::signed(1), 0, 1, Some(100)));
 		assert_ok!(GameDistribution::set_game_team(Origin::signed(1), 0, 2, 3, 4));
 
 		assert_noop!(
@@ -492,7 +492,7 @@ fn burn_works() {
 #[test]
 fn approval_lifecycle_works() {
 	new_test_ext().execute_with(|| {
-		assert_ok!(GameDistribution::create_game(Origin::signed(1), 0, 1, 1000));
+		assert_ok!(GameDistribution::create_game(Origin::signed(1), 0, 1, Some(1000)));
 		assert_ok!(GameDistribution::mint_ticket(Origin::signed(1), 0, 42, 2));
 		assert_ok!(GameDistribution::approve_transfer(Origin::signed(2), 0, 42, 3));
 		assert_ok!(GameDistribution::transfer(Origin::signed(3), 0, 42, 4));
@@ -510,7 +510,7 @@ fn approval_lifecycle_works() {
 #[test]
 fn cancel_approval_works() {
 	new_test_ext().execute_with(|| {
-		assert_ok!(GameDistribution::create_game(Origin::signed(1), 0, 1, 1000));
+		assert_ok!(GameDistribution::create_game(Origin::signed(1), 0, 1, Some(1000)));
 		assert_ok!(GameDistribution::mint_ticket(Origin::signed(1), 0, 42, 2));
 
 		assert_ok!(GameDistribution::approve_transfer(Origin::signed(2), 0, 42, 3));
@@ -542,7 +542,7 @@ fn cancel_approval_works() {
 #[test]
 fn cancel_approval_works_with_admin() {
 	new_test_ext().execute_with(|| {
-		assert_ok!(GameDistribution::create_game(Origin::signed(1), 0, 1, 1000));
+		assert_ok!(GameDistribution::create_game(Origin::signed(1), 0, 1, Some(1000)));
 		assert_ok!(GameDistribution::mint_ticket(Origin::signed(1), 0, 42, 2));
 
 		assert_ok!(GameDistribution::approve_transfer(Origin::signed(2), 0, 42, 3));
@@ -571,7 +571,7 @@ fn cancel_approval_works_with_admin() {
 fn templates_support() {
 	new_test_ext().execute_with(|| {
 		Balances::make_free_balance_be(&2, 1000);
-		assert_ok!(GameDistribution::create_game(Origin::signed(1), 0, 1, 1000));
+		assert_ok!(GameDistribution::create_game(Origin::signed(1), 0, 1, Some(1000)));
 		assert_ok!(Uniques::create(Origin::signed(2), 101, 2));
 		assert_ok!(Uniques::create(Origin::signed(2), 102, 2));
 		assert_noop!(
@@ -580,8 +580,46 @@ fn templates_support() {
 		);
 		assert_ok!(GameDistribution::add_template_support(Origin::signed(1), 0, 101));
 		assert_ok!(GameDistribution::add_template_support(Origin::signed(1), 0, 102));
+		assert_eq!(Game::<Test>::get(0).unwrap().templates, Some(BTreeSet::from([101, 102])));
 		assert_ok!(GameDistribution::remove_template_support(Origin::signed(1), 0, 101));
 		assert_ok!(GameDistribution::remove_template_support(Origin::signed(1), 0, 102));
+		assert_eq!(Game::<Test>::get(0).unwrap().templates, Some(BTreeSet::default()));
+	});
+}
+
+#[test]
+fn assets_support() {
+	new_test_ext().execute_with(|| {
+		Balances::make_free_balance_be(&2, 1000);
+		assert_ok!(GameDistribution::create_game(Origin::signed(1), 0, 1, Some(1000)));
+		assert_ok!(Uniques::create(Origin::signed(2), 101, 2));
+		assert_ok!(Uniques::create(Origin::signed(2), 102, 2));
+		assert_noop!(
+			GameDistribution::add_template_support(Origin::signed(1), 0, 100),
+			Error::<Test>::Unknown
+		);
+		assert_ok!(GameDistribution::add_asset_support(Origin::signed(1), 0, 101));
+		assert_ok!(GameDistribution::add_asset_support(Origin::signed(1), 0, 102));
+		assert_eq!(Game::<Test>::get(0).unwrap().assets, Some(BTreeSet::from([101, 102])));
+		assert_ok!(GameDistribution::remove_asset_support(Origin::signed(1), 0, 101));
+		assert_ok!(GameDistribution::remove_asset_support(Origin::signed(1), 0, 102));
+		assert_eq!(Game::<Test>::get(0).unwrap().assets, Some(BTreeSet::default()));
+	});
+}
+
+#[test]
+fn set_price() {
+	new_test_ext().execute_with(|| {
+		assert_ok!(GameDistribution::create_game(Origin::signed(1), 0, 1, None));
+		assert_ok!(GameDistribution::set_allow_unpriviledged_mint(Origin::signed(1), 0, true));
+		assert_ok!(GameDistribution::mint_ticket(Origin::signed(2), 0, 42, 2));
+		assert_ok!(GameDistribution::set_price(Origin::signed(1), 0, 100));
+		assert_noop!(
+			GameDistribution::mint_ticket(Origin::signed(2), 0, 42, 2),
+			pallet_balances::Error::<Test>::InsufficientBalance
+		);
+		Balances::make_free_balance_be(&2, 101);
+		assert_ok!(GameDistribution::mint_ticket(Origin::signed(2), 0, 101, 2));
 	});
 }
 

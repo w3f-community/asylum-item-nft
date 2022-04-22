@@ -1,7 +1,6 @@
 use super::*;
 use frame_support::ensure;
 use sp_runtime::{DispatchError, DispatchResult};
-use sp_std::collections::btree_set::BTreeSet;
 
 impl<T: Config> Pallet<T> {
 	pub fn do_transfer(
@@ -36,7 +35,7 @@ impl<T: Config> Pallet<T> {
 		game: T::GameId,
 		owner: T::AccountId,
 		admin: T::AccountId,
-		price: BalanceOf<T>,
+		price: Option<BalanceOf<T>>,
 		event: Event<T>,
 	) -> DispatchResult {
 		ensure!(!Game::<T>::contains_key(game), Error::<T>::InUse);
@@ -53,8 +52,9 @@ impl<T: Config> Pallet<T> {
 				instance_metadatas: 0,
 				attributes: 0,
 				is_frozen: false,
+				templates: None,
+    			assets: None,
 				allow_unprivileged_mint: false,
-				templates: BTreeSet::new(),
 			},
 		);
 
