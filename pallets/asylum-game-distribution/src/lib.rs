@@ -44,11 +44,6 @@ pub mod pallet {
 	pub type BoundedValueOf<T> = BoundedVec<u8, <T as Config>::ValueLimit>;
 	pub type BoundedStringOf<T> = BoundedVec<u8, <T as Config>::StringLimit>;
 
-	pub type BoundedDataOf<T> = BoundedVec<u8, <T as Config>::DataLimit>;
-	pub type BoundedKeyOf<T> = BoundedVec<u8, <T as Config>::KeyLimit>;
-	pub type BoundedValueOf<T> = BoundedVec<u8, <T as Config>::ValueLimit>;
-	pub type BoundedStringOf<T> = BoundedVec<u8, <T as Config>::StringLimit>;
-
 	#[pallet::config]
 	/// The module configuration trait.
 	pub trait Config: frame_system::Config {
