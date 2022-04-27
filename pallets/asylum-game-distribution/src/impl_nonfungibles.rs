@@ -67,12 +67,13 @@ impl<T: Config> Create<<T as SystemConfig>::AccountId> for Pallet<T> {
 		who: &T::AccountId,
 		admin: &T::AccountId,
 	) -> DispatchResult {
+		let admins = BTreeSet::from([admin.clone()]);
 		Self::do_create_game(
 			*class,
 			who.clone(),
-			admin.clone(),
+			admins.clone(),
 			Default::default(),
-			Event::GameCreated { game: *class, creator: who.clone(), owner: admin.clone() },
+			Event::GameCreated { game: *class, owner: who.clone(), admins },
 		)
 	}
 }
