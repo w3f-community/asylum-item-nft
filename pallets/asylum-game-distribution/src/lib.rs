@@ -172,8 +172,8 @@ pub mod pallet {
 	pub enum Event<T: Config> {
 		GameCreated {
 			game: T::GameId,
-			creator: T::AccountId,
 			owner: T::AccountId,
+			admins: BTreeSet<T::AccountId>,
 		},
 		GameDestroyed {
 			game: T::GameId,
@@ -214,9 +214,9 @@ pub mod pallet {
 		},
 		TeamChanged {
 			game: T::GameId,
-			issuer: T::AccountId,
-			admin: T::AccountId,
-			freezer: T::AccountId,
+			issuers: BTreeSet<T::AccountId>,
+			admins: BTreeSet<T::AccountId>,
+			freezers: BTreeSet<T::AccountId>,
 		},
 		ApprovedTransfer {
 			game: T::GameId,
@@ -314,18 +314,20 @@ pub mod pallet {
 		pub fn create_game(
 			origin: OriginFor<T>,
 			#[pallet::compact] game: T::GameId,
-			admin: <T::Lookup as StaticLookup>::Source,
+			admins: Vec<<T::Lookup as StaticLookup>::Source>,
 			price: Option<BalanceOf<T>>,
 		) -> DispatchResult {
 			let owner = ensure_signed(origin)?;
-			let admin = T::Lookup::lookup(admin)?;
+			let admins = admins.into_iter()
+			.map(|admin| T::Lookup::lookup(admin))
+			.collect::<Result<BTreeSet<T::AccountId>, _>>()?;
 
 			Self::do_create_game(
 				game,
 				owner.clone(),
-				admin.clone(),
+				admins.clone(),
 				price,
-				Event::GameCreated { game, creator: owner, owner: admin },
+				Event::GameCreated { game, owner, admins },
 			)
 		}
 
@@ -351,7 +353,7 @@ pub mod pallet {
 			let owner = T::Lookup::lookup(owner)?;
 			let game_details = Game::<T>::get(game).ok_or(Error::<T>::Unknown)?;
 			ensure!(
-				game_details.allow_unprivileged_mint || game_details.issuer == sender,
+				game_details.allow_unprivileged_mint || game_details.issuers.contains(&sender),
 				Error::<T>::NoPermission
 			);
 			if let Some(price) = game_details.price {
@@ -377,7 +379,7 @@ pub mod pallet {
 			let check_owner = check_owner.map(T::Lookup::lookup).transpose()?;
 
 			Self::do_burn_ticket(game, ticket, |class_details, details| {
-				let is_permitted = class_details.admin == origin || details.owner == origin;
+				let is_permitted = class_details.admins.contains(&origin) || details.owner == origin;
 				ensure!(is_permitted, Error::<T>::NoPermission);
 				ensure!(check_owner.map_or(true, |o| o == details.owner), Error::<T>::WrongOwner);
 				Ok(())
@@ -395,7 +397,7 @@ pub mod pallet {
 			let dest = T::Lookup::lookup(dest)?;
 
 			Self::do_transfer(game, ticket, dest, |class_details, details| {
-				if details.owner != origin && class_details.admin != origin {
+				if details.owner != origin && !class_details.admins.contains(&origin) {
 					let approved = details.approved.take().map_or(false, |i| i == origin);
 					ensure!(approved, Error::<T>::NoPermission);
 				}
@@ -413,7 +415,7 @@ pub mod pallet {
 
 			let mut details = Ticket::<T>::get(&game, &ticket).ok_or(Error::<T>::Unknown)?;
 			let game_details = Game::<T>::get(&game).ok_or(Error::<T>::Unknown)?;
-			ensure!(game_details.freezer == origin, Error::<T>::NoPermission);
+			ensure!(game_details.freezers.contains(&origin), Error::<T>::NoPermission);
 
 			details.is_frozen = true;
 			Ticket::<T>::insert(&game, &ticket, &details);
@@ -432,7 +434,7 @@ pub mod pallet {
 
 			let mut details = Ticket::<T>::get(&game, &ticket).ok_or(Error::<T>::Unknown)?;
 			let game_details = Game::<T>::get(&game).ok_or(Error::<T>::Unknown)?;
-			ensure!(game_details.admin == origin, Error::<T>::NoPermission);
+			ensure!(game_details.admins.contains(&origin), Error::<T>::NoPermission);
 
 			details.is_frozen = false;
 			Ticket::<T>::insert(&game, &ticket, &details);
@@ -450,7 +452,7 @@ pub mod pallet {
 
 			Game::<T>::try_mutate(game, |maybe_details| {
 				let details = maybe_details.as_mut().ok_or(Error::<T>::Unknown)?;
-				ensure!(origin == details.freezer, Error::<T>::NoPermission);
+				ensure!(details.freezers.contains(&origin), Error::<T>::NoPermission);
 
 				details.is_frozen = true;
 
@@ -468,7 +470,7 @@ pub mod pallet {
 
 			Game::<T>::try_mutate(game, |maybe_details| {
 				let details = maybe_details.as_mut().ok_or(Error::<T>::Unknown)?;
-				ensure!(origin == details.admin, Error::<T>::NoPermission);
+				ensure!(details.admins.contains(&origin), Error::<T>::NoPermission);
 
 				details.is_frozen = false;
 
@@ -507,24 +509,29 @@ pub mod pallet {
 		pub fn set_game_team(
 			origin: OriginFor<T>,
 			#[pallet::compact] game: T::GameId,
-			issuer: <T::Lookup as StaticLookup>::Source,
-			admin: <T::Lookup as StaticLookup>::Source,
-			freezer: <T::Lookup as StaticLookup>::Source,
+			issuers: Vec<<T::Lookup as StaticLookup>::Source>,
+			admins: Vec<<T::Lookup as StaticLookup>::Source>,
+			freezers: Vec<<T::Lookup as StaticLookup>::Source>,
 		) -> DispatchResult {
 			let origin = ensure_signed(origin)?;
-			let issuer = T::Lookup::lookup(issuer)?;
-			let admin = T::Lookup::lookup(admin)?;
-			let freezer = T::Lookup::lookup(freezer)?;
-
+			let issuers = issuers.into_iter()
+			.map(|issuer| T::Lookup::lookup(issuer))
+			.collect::<Result<BTreeSet<T::AccountId>, _>>()?;
+			let admins = admins.into_iter()
+			.map(|admin| T::Lookup::lookup(admin))
+			.collect::<Result<BTreeSet<T::AccountId>, _>>()?;
+			let freezers = freezers.into_iter()
+			.map(|freezer| T::Lookup::lookup(freezer))
+			.collect::<Result<BTreeSet<T::AccountId>, _>>()?;
 			Game::<T>::try_mutate(game, |maybe_details| {
 				let details = maybe_details.as_mut().ok_or(Error::<T>::Unknown)?;
 				ensure!(origin == details.owner, Error::<T>::NoPermission);
 
-				details.issuer = issuer.clone();
-				details.admin = admin.clone();
-				details.freezer = freezer.clone();
+				details.issuers = issuers.clone();
+				details.admins = admins.clone();
+				details.freezers = freezers.clone();
 
-				Self::deposit_event(Event::TeamChanged { game, issuer, admin, freezer });
+				Self::deposit_event(Event::TeamChanged { game, issuers, admins, freezers });
 				Ok(())
 			})
 		}
@@ -536,13 +543,13 @@ pub mod pallet {
 			#[pallet::compact] ticket: T::TicketId,
 			delegate: <T::Lookup as StaticLookup>::Source,
 		) -> DispatchResult {
-			let check = ensure_signed(origin)?;
+			let origin = ensure_signed(origin)?;
 			let delegate = T::Lookup::lookup(delegate)?;
 
 			let game_details = Game::<T>::get(&game).ok_or(Error::<T>::Unknown)?;
 			let mut details = Ticket::<T>::get(&game, &ticket).ok_or(Error::<T>::Unknown)?;
 
-			let permitted = check == game_details.admin || check == details.owner;
+			let permitted = game_details.admins.contains(&origin) || origin == details.owner;
 			ensure!(permitted, Error::<T>::NoPermission);
 
 			details.approved = Some(delegate);
@@ -566,11 +573,11 @@ pub mod pallet {
 			#[pallet::compact] ticket: T::TicketId,
 			maybe_check_delegate: Option<<T::Lookup as StaticLookup>::Source>,
 		) -> DispatchResult {
-			let check = ensure_signed(origin)?;
+			let origin = ensure_signed(origin)?;
 			let game_details = Game::<T>::get(&game).ok_or(Error::<T>::Unknown)?;
 			let mut details = Ticket::<T>::get(&game, &ticket).ok_or(Error::<T>::Unknown)?;
 
-			let permitted = check == game_details.admin || check == details.owner;
+			let permitted = game_details.admins.contains(&origin) || origin == details.owner;
 			ensure!(permitted, Error::<T>::NoPermission);
 
 			let maybe_check_delegate = maybe_check_delegate.map(T::Lookup::lookup).transpose()?;
@@ -752,7 +759,7 @@ pub mod pallet {
 			let origin = ensure_signed(origin)?;
 			Game::<T>::try_mutate_exists(game, |maybe_details| {
 				let details = maybe_details.as_mut().ok_or(Error::<T>::Unknown)?;
-				ensure!(origin == details.admin, Error::<T>::NoPermission);
+				ensure!(details.admins.contains(&origin), Error::<T>::NoPermission);
 
 				details.price = Some(price);
 				Self::deposit_event(Event::SetPrice { game, price });

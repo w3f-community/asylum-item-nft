@@ -11,11 +11,11 @@ pub struct GameDetails<AccountId, Balance, AssetId> {
 	/// Can change `owner`, `issuer`, `freezer` and `admin` accounts.
 	pub(super) owner: AccountId,
 	/// Can mint tokens.
-	pub(super) issuer: AccountId,
+	pub(super) issuers: BTreeSet<AccountId>,
 	/// Can thaw tokens, force transfers and burn tokens from any account.
-	pub(super) admin: AccountId,
+	pub(super) admins: BTreeSet<AccountId>,
 	/// Can freeze tokens.
-	pub(super) freezer: AccountId,
+	pub(super) freezers: BTreeSet<AccountId>,
 	/// Game price
 	pub(super) price: Option<Balance>,
 	/// The total number of outstanding instances of this asset class.

@@ -34,7 +34,7 @@ impl<T: Config> Pallet<T> {
 	pub fn do_create_game(
 		game: T::GameId,
 		owner: T::AccountId,
-		admin: T::AccountId,
+		admins: BTreeSet<T::AccountId>,
 		price: Option<BalanceOf<T>>,
 		event: Event<T>,
 	) -> DispatchResult {
@@ -44,9 +44,9 @@ impl<T: Config> Pallet<T> {
 			game,
 			GameDetails {
 				owner: owner.clone(),
-				issuer: admin.clone(),
-				admin: admin.clone(),
-				freezer: admin,
+				issuers: admins.clone(),
+				admins: admins.clone(),
+				freezers: admins,
 				price,
 				instances: 0,
 				instance_metadatas: 0,
