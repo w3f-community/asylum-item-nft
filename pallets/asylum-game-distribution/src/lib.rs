@@ -12,14 +12,16 @@ mod types;
 
 use asylum_traits::primitives::TemplateId;
 use codec::{Decode, Encode, HasCompact};
-use frame_support::traits::{tokens::{nonfungibles::Inspect as NFTInspect, fungibles::Inspect as FungibleInspect}, Currency, ExistenceRequirement};
+use frame_support::traits::{
+	tokens::{fungibles::Inspect as FungibleInspect, nonfungibles::Inspect as NFTInspect},
+	Currency, ExistenceRequirement,
+};
 use frame_system::Config as SystemConfig;
 use sp_runtime::{
 	traits::{Saturating, StaticLookup, Zero},
 	ArithmeticError, RuntimeDebug,
 };
-use sp_std::collections::btree_set::BTreeSet;
-use sp_std::prelude::*;
+use sp_std::{collections::btree_set::BTreeSet, prelude::*};
 
 pub use pallet::*;
 pub use types::*;
@@ -37,7 +39,7 @@ pub mod pallet {
 
 	pub type BalanceOf<T> =
 		<<T as Config>::Currency as Currency<<T as frame_system::Config>::AccountId>>::Balance;
-	pub type AssetIdOf<T> = <T as Config>::AssetId;	
+	pub type AssetIdOf<T> = <T as Config>::AssetId;
 
 	pub type BoundedDataOf<T> = BoundedVec<u8, <T as Config>::DataLimit>;
 	pub type BoundedKeyOf<T> = BoundedVec<u8, <T as Config>::KeyLimit>;
@@ -54,12 +56,7 @@ pub mod pallet {
 		type Uniques: NFTInspect<Self::AccountId, ClassId = TemplateId>;
 
 		/// Additional data to be stored with an account's asset balance.
-		type AssetId: Parameter
-		+ Member
-		+ MaybeSerializeDeserialize
-		+ Ord
-		+ MaxEncodedLen
-		+ Copy;
+		type AssetId: Parameter + Member + MaybeSerializeDeserialize + Ord + MaxEncodedLen + Copy;
 
 		/// Inspect pallet assets to check if game's assets really exist
 		type Assets: FungibleInspect<Self::AccountId, AssetId = Self::AssetId>;
@@ -318,9 +315,10 @@ pub mod pallet {
 			price: Option<BalanceOf<T>>,
 		) -> DispatchResult {
 			let owner = ensure_signed(origin)?;
-			let admins = admins.into_iter()
-			.map(|admin| T::Lookup::lookup(admin))
-			.collect::<Result<BTreeSet<T::AccountId>, _>>()?;
+			let admins = admins
+				.into_iter()
+				.map(T::Lookup::lookup)
+				.collect::<Result<BTreeSet<T::AccountId>, _>>()?;
 
 			Self::do_create_game(
 				game,
@@ -379,7 +377,8 @@ pub mod pallet {
 			let check_owner = check_owner.map(T::Lookup::lookup).transpose()?;
 
 			Self::do_burn_ticket(game, ticket, |class_details, details| {
-				let is_permitted = class_details.admins.contains(&origin) || details.owner == origin;
+				let is_permitted =
+					class_details.admins.contains(&origin) || details.owner == origin;
 				ensure!(is_permitted, Error::<T>::NoPermission);
 				ensure!(check_owner.map_or(true, |o| o == details.owner), Error::<T>::WrongOwner);
 				Ok(())
@@ -514,15 +513,18 @@ pub mod pallet {
 			freezers: Vec<<T::Lookup as StaticLookup>::Source>,
 		) -> DispatchResult {
 			let origin = ensure_signed(origin)?;
-			let issuers = issuers.into_iter()
-			.map(|issuer| T::Lookup::lookup(issuer))
-			.collect::<Result<BTreeSet<T::AccountId>, _>>()?;
-			let admins = admins.into_iter()
-			.map(|admin| T::Lookup::lookup(admin))
-			.collect::<Result<BTreeSet<T::AccountId>, _>>()?;
-			let freezers = freezers.into_iter()
-			.map(|freezer| T::Lookup::lookup(freezer))
-			.collect::<Result<BTreeSet<T::AccountId>, _>>()?;
+			let issuers = issuers
+				.into_iter()
+				.map(T::Lookup::lookup)
+				.collect::<Result<BTreeSet<T::AccountId>, _>>()?;
+			let admins = admins
+				.into_iter()
+				.map(T::Lookup::lookup)
+				.collect::<Result<BTreeSet<T::AccountId>, _>>()?;
+			let freezers = freezers
+				.into_iter()
+				.map(T::Lookup::lookup)
+				.collect::<Result<BTreeSet<T::AccountId>, _>>()?;
 			Game::<T>::try_mutate(game, |maybe_details| {
 				let details = maybe_details.as_mut().ok_or(Error::<T>::Unknown)?;
 				ensure!(origin == details.owner, Error::<T>::NoPermission);
@@ -784,7 +786,7 @@ pub mod pallet {
 				} else {
 					details.templates = Some(BTreeSet::from([template_id]));
 				}
-				
+
 				Self::deposit_event(Event::GameAddTemplateSupport { game, template_id });
 				Ok(())
 			})
@@ -827,7 +829,7 @@ pub mod pallet {
 				} else {
 					details.assets = Some(BTreeSet::from([asset_id]));
 				}
-				
+
 				//Self::deposit_event(Event::GameAddTemplateSupport { game, template_id });
 				Ok(())
 			})

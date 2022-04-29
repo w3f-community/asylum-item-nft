@@ -53,7 +53,7 @@ impl<T: Config> Pallet<T> {
 				attributes: 0,
 				is_frozen: false,
 				templates: None,
-    			assets: None,
+				assets: None,
 				allow_unprivileged_mint: false,
 			},
 		);

@@ -234,12 +234,18 @@ fn should_mint_item_from_template() {
 		for tag in PREFIX {
 			for interpretation_id in INTERPRETATIONS {
 				let res_id = concat(tag, interpretation_id);
-				assert_eq!(AsylumCore::item_interpretation_tags((0, 0, &res_id)), Some(tags.clone()));
+				assert_eq!(
+					AsylumCore::item_interpretation_tags((0, 0, &res_id)),
+					Some(tags.clone())
+				);
 				assert_eq!(
 					RmrkCore::resources((0, 0, &res_id)),
 					Some(to_resource(interpretation(tag, interpretation_id, MOCK_HASH)))
 				);
-				assert_eq!(AsylumCore::item_interpretation_tags((0, 1, &res_id)), Some(tags.clone()));
+				assert_eq!(
+					AsylumCore::item_interpretation_tags((0, 1, &res_id)),
+					Some(tags.clone())
+				);
 				assert_eq!(
 					RmrkCore::resources((0, 1, &res_id)),
 					Some(to_resource(interpretation(tag, interpretation_id, MOCK_HASH)))

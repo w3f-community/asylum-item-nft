@@ -292,7 +292,13 @@ fn set_team_should_work() {
 	new_test_ext().execute_with(|| {
 		Balances::make_free_balance_be(&2, 1001);
 		assert_ok!(GameDistribution::create_game(Origin::signed(1), 0, vec![1], Some(1000)));
-		assert_ok!(GameDistribution::set_game_team(Origin::signed(1), 0, vec![2], vec![3], vec![4]));
+		assert_ok!(GameDistribution::set_game_team(
+			Origin::signed(1),
+			0,
+			vec![2],
+			vec![3],
+			vec![4]
+		));
 
 		assert_ok!(GameDistribution::mint_ticket(Origin::signed(2), 0, 42, 2));
 		assert_ok!(GameDistribution::freeze_ticket(Origin::signed(4), 0, 42));
@@ -465,7 +471,13 @@ fn burn_works() {
 		Balances::make_free_balance_be(&1, 100);
 		Balances::make_free_balance_be(&2, 201);
 		assert_ok!(GameDistribution::create_game(Origin::signed(1), 0, vec![1], Some(100)));
-		assert_ok!(GameDistribution::set_game_team(Origin::signed(1), 0, vec![2], vec![3], vec![4]));
+		assert_ok!(GameDistribution::set_game_team(
+			Origin::signed(1),
+			0,
+			vec![2],
+			vec![3],
+			vec![4]
+		));
 
 		assert_noop!(
 			GameDistribution::burn_ticket(Origin::signed(5), 0, 42, Some(5)),
@@ -627,12 +639,27 @@ fn set_price() {
 fn several_admins_test() {
 	new_test_ext().execute_with(|| {
 		assert_ok!(GameDistribution::create_game(Origin::signed(1), 0, vec![2, 3], None));
-		assert_noop!(GameDistribution::mint_ticket(Origin::signed(4), 0, 42, 2), Error::<Test>::NoPermission);
+		assert_noop!(
+			GameDistribution::mint_ticket(Origin::signed(4), 0, 42, 2),
+			Error::<Test>::NoPermission
+		);
 		assert_ok!(GameDistribution::mint_ticket(Origin::signed(2), 0, 42, 2));
 		assert_ok!(GameDistribution::mint_ticket(Origin::signed(3), 0, 101, 3));
-		assert_ok!(GameDistribution::set_game_team(Origin::signed(1), 0, vec![1], vec![2], vec![3]));
-		assert_noop!(GameDistribution::mint_ticket(Origin::signed(2), 0, 102, 2), Error::<Test>::NoPermission);
-		assert_noop!(GameDistribution::mint_ticket(Origin::signed(3), 0, 103, 3), Error::<Test>::NoPermission);
+		assert_ok!(GameDistribution::set_game_team(
+			Origin::signed(1),
+			0,
+			vec![1],
+			vec![2],
+			vec![3]
+		));
+		assert_noop!(
+			GameDistribution::mint_ticket(Origin::signed(2), 0, 102, 2),
+			Error::<Test>::NoPermission
+		);
+		assert_noop!(
+			GameDistribution::mint_ticket(Origin::signed(3), 0, 103, 3),
+			Error::<Test>::NoPermission
+		);
 		assert_ok!(GameDistribution::mint_ticket(Origin::signed(1), 0, 104, 1));
 	});
 }
