@@ -106,3 +106,5 @@ Asylum consists of core and GDS pallet:
 
 - Core pallet: this module provides functionality for templates and items management.
 - Game Distribution System: this module provides functionality for games and tickets management.
+
+Simple example of usage can be found [here](./docs/example.md)
