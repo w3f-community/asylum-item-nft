@@ -58,8 +58,8 @@ pub mod pallet {
 
 	#[pallet::storage]
 	/// Interpretations supported by Items
-	#[pallet::getter(fn item_interpretations)]
-	pub(super) type ItemIntepretations<T: Config> = StorageNMap<
+	#[pallet::getter(fn item_interpretation_tags)]
+	pub(super) type ItemInterpretationTags<T: Config> = StorageNMap<
 		_,
 		(
 			NMapKey<Twox64Concat, TemplateId>,

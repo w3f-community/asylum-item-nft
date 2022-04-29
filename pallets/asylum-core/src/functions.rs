@@ -68,7 +68,7 @@ where
 							None,
 							None,
 						)?;
-						ItemIntepretations::<T>::insert((template_id, item_id, res.id), &tags);
+						ItemInterpretationTags::<T>::insert((template_id, item_id, res.id), &tags);
 						Ok(())
 					},
 				)?;
@@ -139,7 +139,7 @@ where
 		)?;
 		pallet_rmrk_core::Nfts::<T>::iter_key_prefix(template_id).try_for_each(
 			|item_id| -> DispatchResult {
-				ItemIntepretations::<T>::try_mutate(
+				ItemInterpretationTags::<T>::try_mutate(
 					(template_id, item_id, &interpretation_id),
 					|interpretation_tags| -> DispatchResult {
 						if let Some(inter) = interpretation_tags {
@@ -172,7 +172,7 @@ where
 					item_id,
 					interpretation_id.clone(),
 				)?;
-				ItemIntepretations::<T>::remove((template_id, item_id, &interpretation_id));
+				ItemInterpretationTags::<T>::remove((template_id, item_id, &interpretation_id));
 				Ok(())
 			},
 		)

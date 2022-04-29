@@ -35,7 +35,7 @@ where
 		item_id: ItemId,
 	) -> Result<(TemplateId, ItemId), DispatchError> {
 		TemplateIntepretations::<T>::iter_prefix(template_id).try_for_each(|(interpretation_id, (IntepretationInfo { src, metadata, .. }, tags))| -> DispatchResult {
-			ItemIntepretations::<T>::insert((template_id, item_id, &interpretation_id), tags);
+			ItemInterpretationTags::<T>::insert((template_id, item_id, &interpretation_id), tags);
 			pallet_rmrk_core::Pallet::<T>::resource_add(
 				sender.clone(),
 				template_id,
@@ -58,7 +58,7 @@ where
 		template_id: TemplateId,
 		item_id: ItemId,
 	) -> Result<(TemplateId, ItemId), DispatchError> {
-		ItemIntepretations::<T>::remove_prefix((template_id, item_id), None);
+		ItemInterpretationTags::<T>::remove_prefix((template_id, item_id), None);
 		Ok((template_id, item_id))
 	}
 
