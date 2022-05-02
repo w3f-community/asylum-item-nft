@@ -110,7 +110,7 @@ impl pallet_uniques::Config for Test {
 
 parameter_types! {
 	pub const MaxRecursions: u32 = 10;
-	pub const ResourceSymbolLimit: u32 = 10;
+	pub const ResourceSymbolLimit: u32 = 100;
 	pub const CollectionSymbolLimit: u32 = 100;
 	pub const TagLimit: u32 = 32;
 }
