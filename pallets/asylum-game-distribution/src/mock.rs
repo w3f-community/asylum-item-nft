@@ -4,7 +4,7 @@ use frame_support::{
 	construct_runtime, parameter_types,
 	traits::{ConstU32, ConstU64},
 };
-use pallet_assets::{FrozenBalance};
+use pallet_assets::FrozenBalance;
 use pallet_uniques as uniques;
 use sp_core::H256;
 use sp_runtime::{
@@ -148,11 +148,11 @@ thread_local! {
 pub struct TestFreezer;
 impl FrozenBalance<u32, u64, u64> for TestFreezer {
 	fn frozen_balance(asset: u32, who: &u64) -> Option<u64> {
-		FROZEN.with(|f| f.borrow().get(&(asset, who.clone())).cloned())
+		FROZEN.with(|f| f.borrow().get(&(asset, *who)).cloned())
 	}
 
 	fn died(asset: u32, who: &u64) {
-		HOOKS.with(|h| h.borrow_mut().push(Hook::Died(asset, who.clone())));
+		HOOKS.with(|h| h.borrow_mut().push(Hook::Died(asset, *who)));
 		// Sanity check: dead accounts have no balance.
 		assert!(Assets::balance(asset, *who).is_zero());
 	}

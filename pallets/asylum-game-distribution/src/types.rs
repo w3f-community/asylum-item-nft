@@ -32,7 +32,6 @@ pub struct GameDetails<AccountId, Balance, AssetId> {
 	pub(super) assets: Option<BTreeSet<AssetId>>, // Maybe we should use Vec here
 	/// Allow tickets minting by non-issuer account
 	pub(super) allow_unprivileged_mint: bool,
-
 }
 
 /// Witness data for the destroy transactions.

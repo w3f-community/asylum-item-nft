@@ -234,12 +234,18 @@ fn should_mint_item_from_template() {
 		for tag in PREFIX {
 			for interpretation_id in INTERPRETATIONS {
 				let res_id = concat(tag, interpretation_id);
-				assert_eq!(AsylumCore::item_interpretations((0, 0, &res_id)), Some(tags.clone()));
+				assert_eq!(
+					AsylumCore::item_interpretation_tags((0, 0, &res_id)),
+					Some(tags.clone())
+				);
 				assert_eq!(
 					RmrkCore::resources((0, 0, &res_id)),
 					Some(to_resource(interpretation(tag, interpretation_id, MOCK_HASH)))
 				);
-				assert_eq!(AsylumCore::item_interpretations((0, 1, &res_id)), Some(tags.clone()));
+				assert_eq!(
+					AsylumCore::item_interpretation_tags((0, 1, &res_id)),
+					Some(tags.clone())
+				);
 				assert_eq!(
 					RmrkCore::resources((0, 1, &res_id)),
 					Some(to_resource(interpretation(tag, interpretation_id, MOCK_HASH)))
@@ -425,7 +431,7 @@ fn should_burn_item() {
 		for tag in PREFIX {
 			for interpretation_id in INTERPRETATIONS {
 				assert_eq!(
-					AsylumCore::item_interpretations((0, 0, concat(tag, interpretation_id))),
+					AsylumCore::item_interpretation_tags((0, 0, concat(tag, interpretation_id))),
 					None
 				);
 			}
@@ -483,7 +489,7 @@ fn should_update_template_and_item() {
 		);
 
 		assert_eq!(
-			AsylumCore::item_interpretations((0, 0, concat(PREFIX_3D, PIXEL))),
+			AsylumCore::item_interpretation_tags((0, 0, concat(PREFIX_3D, PIXEL))),
 			Some(default_tags)
 		);
 		assert_eq!(
@@ -510,7 +516,7 @@ fn should_update_template_and_item() {
 		assert_ok!(AsylumCore::update_template(Origin::signed(ALICE), 0, 1));
 		assert_eq!(AsylumCore::template_interpretations(0, concat(PREFIX_2D, PIXEL)), None);
 		assert_eq!(
-			AsylumCore::item_interpretations((0, 0, concat(PREFIX_3D, PIXEL))),
+			AsylumCore::item_interpretation_tags((0, 0, concat(PREFIX_3D, PIXEL))),
 			Some(new_tags)
 		);
 	});
@@ -564,7 +570,7 @@ fn should_update_template_and_item_pending() {
 		);
 		assert_ok!(AsylumCore::accept_item_update(Origin::signed(BOB), 0, 0));
 		assert_eq!(
-			AsylumCore::item_interpretations((0, 0, concat(PREFIX_3D, PIXEL))),
+			AsylumCore::item_interpretation_tags((0, 0, concat(PREFIX_3D, PIXEL))),
 			Some(default_tags)
 		);
 		assert_eq!(
@@ -592,7 +598,7 @@ fn should_update_template_and_item_pending() {
 		assert_ok!(AsylumCore::accept_item_update(Origin::signed(BOB), 0, 0));
 		assert_eq!(AsylumCore::template_interpretations(0, concat(PREFIX_2D, PIXEL)), None);
 		assert_eq!(
-			AsylumCore::item_interpretations((0, 0, concat(PREFIX_3D, PIXEL))),
+			AsylumCore::item_interpretation_tags((0, 0, concat(PREFIX_3D, PIXEL))),
 			Some(new_tags)
 		);
 	});
