@@ -23,7 +23,7 @@ The Asylum module provides functionality for `Templates` and `Items` management,
 ### Terminology
 
 * **Template:** The extension of the classic NFT Collection. The `Teamlate` has a set of supported `Interpretations`, and all items minted from this `Template` supports these `Interpretations` as well.
-* **Interpretation:** The description of the media resource used to interpretate the `Template` in different contexts. To describe such context `Interpretation` must be associated with the unique set of `Tags`. This set of `Tags` defined the format of `Interpretation`'s metadata.
+* **Interpretation:** The description of the media resource, which is used to interpretate the `Template` in different contexts. To describe such context `Interpretation` must be associated with the unique set of `Tags`. This set of `Tags` defines the format of `Interpretation`'s metadata.
 * **Tag:** The `Tag` is used to give an `Interpretation` a special semanthic alowing `Game Client` to query specific `Interpretation` according to the context of usage. `Tag` can describe a list of fields, which forms `Interpretaion` metadata.
 * **Item:** The NFT minted from particular `Template`. `Item` has the same `Interpretation` list, specified by `Template` at the time of its minting, but can differ in future with upgrading the `Template`. The owner of `Item` might not want to upgrade this `Item` according to latest updates of `Template`.
 * **Interpretation Tag creation:** The creation of a new interpretation tag.
