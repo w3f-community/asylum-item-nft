@@ -22,22 +22,18 @@ The Asylum module provides functionality for `Templates` and `Items` management,
 
 ### Terminology
 
+Entities:
 * **Template:** The extension of the classic NFT Collection. The `Teamlate` has a set of supported `Interpretations`, and all items minted from this `Template` supports these `Interpretations` as well.
 * **Interpretation:** The description of the media resource, which is used to interpretate the `Template` in different contexts. To describe such context `Interpretation` must be associated with the unique set of `Tags`. This set of `Tags` defines the format of `Interpretation`'s metadata.
 * **Tag:** The `Tag` is used to give an `Interpretation` a special semanthic alowing `Game Client` to query specific `Interpretation` according to the context of usage. `Tag` can describe a list of fields, which forms `Interpretaion`'s metadata.
 * **Item:** The NFT minted from particular `Template`. `Item` has the same `Interpretation` list, specified by `Template` at the time of its minting, but can differ in future with upgrading the `Template`. The owner of `Item` might reject upgrading this `Item` according to latest updates of `Template`.
-* **Template update:** The action of updating `Interpretations` supported the template: add/modify/remove
+
+Actions:
+* **Template update:** The action of updating `Interpretations` supported by the `Template`. The update divided by two steps: 
+    1. Anyone create proposal to update `Template` interpretations of metadata 
+    2. `Template` owner should submit proposal, after that `Template` will be updated
 * **Item update:** The action of updating the `Item`'s supported interpretations to the last version of the `Item`'s template. Triggered automatically after `Template` update, but the `Item`'s owner should accept all changes.
 * **Compatability with pallet-uniques and RMRK:** Interpretations are RMRK resources. Asylum NFTs can be used in `pallet_uniques` and RMRK contexts but with cut functionality.
-
-### Goals
-
-The Asylum core pallet is designed to make the following possible:
-
-* Allow accounts to create, destroy and update templates (collections of items).
-* Allow the account to mint, burn, and update items within a template.
-* Allow submitting template change proposals.
-* Move items between accounts.
 
 ## Interface
 
