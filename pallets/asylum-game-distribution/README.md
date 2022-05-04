@@ -24,19 +24,8 @@ The Asylum GDS module is based on `pallet_uniques`. This module provides functio
   - set of admins (or DAO) and owner who can modify the game,
   - _[planed]_ on-chain state and game back-end (probably TEE), which modifies the state.
 * **Ticket:** The NFT, which is used as a pass to the `Game`.
-* **Game Client:** The binary (e.g. WASM), which is used by Player the run and play the `Game`. Right now, it will be a link to the server, where the game is spin up.
+* **Game Client:** The binary (e. g. WASM), which the Player uses to run and play the `Game`. Right now, it will be a link to the server where the game is spun up.
 
-### Goals
-
-The Asylum GDS pallet is designed to make the following possible:
-
-* Allow accounts to create and destroy games.
-* Allow the account to mint, burn, and transfer tickets.
-* Move tickets between accounts.
-* Allow an account to freeze and unfreeze tickets within a
-  game or the entire game.
-* Allow the owner of a ticket instance to delegate the ability to transfer the ticket to some
-  named third party.
 
 ## Interface
 
@@ -69,6 +58,6 @@ The Asylum GDS pallet is designed to make the following possible:
 
 * [`System`](https://docs.rs/frame-system/latest/frame_system/)
 * [`Support`](https://docs.rs/frame-support/latest/frame_support/)
-* [`Uniques`](https://docs.rs/pallet-assets/latest/pallet_uniques/)
+* [`Uniques`](https://paritytech.github.io/substrate/master/pallet_uniques/index.html)
 
 License: MIT
