@@ -10,7 +10,7 @@ The Asylum module provides functionality for `Templates` and `Items` management,
 * `Template` creation
 * `Template` destroying
 * `Template` update
-* `Item` issuance
+* `Item` minting
 * `Item` transfer
 * `Item` burning
 * `Item` update
@@ -24,17 +24,11 @@ The Asylum module provides functionality for `Templates` and `Items` management,
 
 * **Template:** The extension of the classic NFT Collection. The `Teamlate` has a set of supported `Interpretations`, and all items minted from this `Template` supports these `Interpretations` as well.
 * **Interpretation:** The description of the media resource, which is used to interpretate the `Template` in different contexts. To describe such context `Interpretation` must be associated with the unique set of `Tags`. This set of `Tags` defines the format of `Interpretation`'s metadata.
-* **Tag:** The `Tag` is used to give an `Interpretation` a special semanthic alowing `Game Client` to query specific `Interpretation` according to the context of usage. `Tag` can describe a list of fields, which forms `Interpretaion` metadata.
-* **Item:** The NFT minted from particular `Template`. `Item` has the same `Interpretation` list, specified by `Template` at the time of its minting, but can differ in future with upgrading the `Template`. The owner of `Item` might not want to upgrade this `Item` according to latest updates of `Template`.
-* **Interpretation Tag creation:** The creation of a new interpretation tag.
-* **Template creation:** The creation of a new `Template`.
-* **Template destruction:** The destruction of a `Template`.
+* **Tag:** The `Tag` is used to give an `Interpretation` a special semanthic alowing `Game Client` to query specific `Interpretation` according to the context of usage. `Tag` can describe a list of fields, which forms `Interpretaion`'s metadata.
+* **Item:** The NFT minted from particular `Template`. `Item` has the same `Interpretation` list, specified by `Template` at the time of its minting, but can differ in future with upgrading the `Template`. The owner of `Item` might reject upgrading this `Item` according to latest updates of `Template`.
 * **Template update:** The action of updating `Interpretations` supported the template: add/modify/remove
-* **Item issuance:** Creating a new `Item` from the `Template`.
-* **Item transfer:** The action of transferring an `Item` from one account to another.
-* **Item burning:** The destruction of an `Item`.
 * **Item update:** The action of updating the `Item`'s supported interpretations to the last version of the `Item`'s template. Triggered automatically after `Template` update, but the `Item`'s owner should accept all changes.
-* **Compatability with pallet-uniques and RMRK:** The interpretations are RMRK resources. Asylum NFTs can be used in pallet-uniques and RMRK contexts but with cut functionality.
+* **Compatability with pallet-uniques and RMRK:** Interpretations are RMRK resources. Asylum NFTs can be used in `pallet_uniques` and RMRK contexts but with cut functionality.
 
 ### Goals
 
