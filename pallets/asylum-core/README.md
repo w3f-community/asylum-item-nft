@@ -1,20 +1,24 @@
 # Asylum Core Module
 
-A simple, secure module for dealing with asylum templates and items
+A simple, secure module for dealing with Asylum **Templates** and **Items**
 
 ## Overview
 
-The Asylum module provides functionality for templates and items management, including:
+The Asylum module provides functionality for **Templates** and **Items** management, including:
 
-* Interpretation type creation
-* Template creation
-* Template destroying
-* Template update
-* Item issuance
-* Item transfer
-* Item burning
-* Item update
-* Compatability with pallet-uniques and RMRK
+* Interpretation **Tag** creation
+* **Template** creation
+* **Template** destroying
+* **Template** update
+* **Item** issuance
+* **Item** transfer
+* **Item** burning
+* **Item** update
+* Compatability with [pallet_uniques](https://docs.rs/pallet-assets/latest/pallet_uniques/) and [RMRK pallets](https://rmrk-team.github.io/rmrk-substrate/#/pallets/rmrk-core)
+
+### Flow diagram
+
+![](./img/asylum-flow-diagram.png)
 
 ### Terminology
 
@@ -67,4 +71,4 @@ The Asylum core pallet is designed to make the following possible:
 * [`Uniques`](https://docs.rs/pallet-assets/latest/pallet_uniques/)
 * [`RMRK`](https://rmrk-team.github.io/rmrk-substrate/#/pallets/rmrk-core)
 
-License: Apache-2.0
+License: MIT
