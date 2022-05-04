@@ -1,6 +1,6 @@
-# Asylum Game Distribution System Module
+# Asylum Game Distribution System Pallet
 
-A simple, secure module for dealing with asylum games and tickets
+A simple, secure module for dealing with Asylum games and tickets
 
 ## Overview
 
