@@ -34,26 +34,25 @@ Actions:
     2. DAO votes for proposal _(right now the step is skipped)_.
     3. `Template` owner applies proposal, after that `Template` will be updated.
 * **Item update:** The action of updating the `Item`'s supported interpretations to the last version of the `Item`'s template. Triggered automatically after `Template` update, but the `Item`'s owner should accept all changes.
-* **Compatability with pallet-uniques and RMRK:** Interpretations are RMRK resources. Asylum NFTs can be used in `pallet_uniques` and RMRK contexts but with cut functionality.
 
 ## Interface
 
 ### Interpretation dispatchables
-* `create_interpretation_tag`: Create new interpretation tag.
+* `create_interpretation_tag`: Creates new interpretation tag.
 
 ### Template dispatchables
 * `create_template`: Create new template.
 * `destroy_template`: Destroy template.
-* `update_template`: Update template according to proposal and request all items update after this.
+* `update_template`: Update template according to the proposal and request minted Items to apply this update.
 
 ### Item dispatchables
-* `mint_item_from_template`: Mint new item from the template, i.e., mint item with the same set of supported interpretations by template.
+* `mint_item_from_template`: Mint new item from the template, i.e. mint item with the same set of supported interpretations by template.
 * `transfer_item`: Move an item from the sender account to receiver.
 * `burn_item`: Destroy an item.
-* `accept_item_update`: Accept all template's updates till the newest version of the template.
+* `accept_item_update`: Accept all template updates up to the newest version of the template.
 
 ### DAO dispatchables
-* `submit_template_change_proposal`: Submit proposal with template changes.
+* `submit_template_change_proposal`: Submit proposal with template updates.
 
 ## Related Modules
 
