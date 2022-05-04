@@ -24,7 +24,7 @@ The Asylum GDS module is based on `pallet_uniques`. This module provides functio
   - set of admins (or DAO) and owner who can modify the game,
   - _[planed]_ on-chain state and game back-end (probably TEE), which modifies the state.
 * **Ticket:** The NFT, which is used as a pass to the `Game`.
-* **Game Client:** The binary (e.g. WASM), which is used by Player the run and play the `Game`.
+* **Game Client:** The binary (e.g. WASM), which is used by Player the run and play the `Game`. Right now, it will be a link to the server, where the game is spin up.
 
 ### Goals
 
