@@ -12,16 +12,21 @@ The Asylum GDS module is based on pallet-uniques. This module provides functiona
 * Ticket transfer
 * Ticket burning
 
+### Flow diagram
+
+![](/docs/img/asylum-flow-diagram.png)
+
 ### Terminology
 
-* **Game:** The collection of tickets.
-* **Ticket:** The NFT, which is used as proof of ownership of the game.
+* **Game:** The `Game` consists of: description metadata, runnable `Game Client`, set of admins (or DAO) and owner who can modify the game, on-chain state and game back-end (probably TEE) who can modify the state.
+* **Ticket:** The NFT, which is used as a pass to the `Game`.
+* **Game Client:** The binary (e.g. WASM), which is used by Player the run and play the `Game`.
 
 ### Goals
 
 The Asylum GDS pallet is designed to make the following possible:
 
-* Allow accounts to create and destroy games (collections of tickets).
+* Allow accounts to create and destroy games.
 * Allow the account to mint, burn, and transfer tickets.
 * Move tickets between accounts.
 * Allow an account to freeze and unfreeze tickets within a
@@ -40,12 +45,12 @@ The Asylum GDS pallet is designed to make the following possible:
 * `set_team`: Alter the permissioned accounts of a game.
 
 ### Ticket dispatchables
-* `mint_ticket`: Mint a new ticket within an asset class. Any account can mint a ticket if it can transfer the game `price` to the game owner account.
+* `mint_ticket`: Mint a new ticket within an asset class.
 * `transfer_ticket`: Transfer a ticket to a new owner.
 * `burn_ticket`: Burn a ticket within a game.
 * `freeze_ticket`: Prevent a ticket from being transferred.
 * `thaw_ticket`: Revert the effects of a previous `freeze_ticket`.
-* `approve_transfer`: Name a delegate who may authorize a transfer.
+* `approve_transfer`: Assign a delegator who can authorize a transfer.
 * `cancel_approval`: Revert the effects of a previous `approve_transfer`.
 
 ### Metadata (permissioned) dispatchables
@@ -62,4 +67,4 @@ The Asylum GDS pallet is designed to make the following possible:
 * [`Support`](https://docs.rs/frame-support/latest/frame_support/)
 * [`Uniques`](https://docs.rs/pallet-assets/latest/pallet_uniques/)
 
-License: Apache-2.0
+License: MIT
