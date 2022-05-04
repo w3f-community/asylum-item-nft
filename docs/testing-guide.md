@@ -69,8 +69,6 @@ Now we can create a template with interpretations that support tags created in t
 ```json
 {
   "description": "The best weapon for the Helloween party 2022",
-  "externalUri": "someUri",
-  "mediaUri": "someUri"
 }
 ```
 
