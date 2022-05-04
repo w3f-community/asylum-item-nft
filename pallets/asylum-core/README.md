@@ -1,6 +1,6 @@
 # Asylum Core Pallet
 
-A simple, secure module for dealing with Asylum `Templates` and `Items`
+A simple, secure module for dealing with Asylum `Templates` and `Items`.
 
 ## Overview
 
