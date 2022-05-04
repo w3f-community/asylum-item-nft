@@ -5,12 +5,12 @@ You have 3 options to interact with Asylum on-chain:
 2. [Asylum UI/Connection Library](https://gitlab.com/asylum-space/asylum-ui/-/tree/main/packages/connection-library) npm package.
 3. [Asylum UI/Game Developers Console](https://gitlab.com/asylum-space/asylum-ui/-/tree/main/packages/game-developers-console) React Web App.
 
-The Testing Guide describes the option 1.
-To start working with the Testing guide, please install Asulum node and use PolkadotJS app for interaction with the node: [Click here for details](https://gitlab.com/asylum-space/asylum-item-nft/-/blob/main/README.md).
+The Testing Guide describes option 1.
+To start working with the Testing guide, please install the Asulum node and use the PolkadotJS app for interaction with the node: [Click here for details](https://gitlab.com/asylum-space/asylum-item-nft/-/blob/main/README.md).
 
 ### Tags
 
-To create new tags, you need to upload tag's metadata to IPFS and call `create_interpretation_tag`. In the example we're creating couple tags `default-view`,`jpeg`:
+To create new tags, you need to upload tag's metadata to IPFS and call `create_interpretation_tag`. In the example, we're creating a couple tags `default-view`,`jpeg`:
 
 
 1. Upload to IPFS `default-view` tag metadata and get its CID:
@@ -23,7 +23,7 @@ To create new tags, you need to upload tag's metadata to IPFS and call `create_i
 }
 ```
 
-2. Create `default-view` tag:
+2. Create a `default-view` tag:
 
 ```json
 {
@@ -51,7 +51,7 @@ To create new tags, you need to upload tag's metadata to IPFS and call `create_i
 }
 ```
 
-4. Create `jpeg` tag:
+4. Create a `jpeg` tag:
 
 ```json
 {
@@ -107,7 +107,7 @@ Now we can create a template with interpretations that support tags created in t
 
 ### Items
 
-After having a template, owner can mint items from it. Call `mint_item_from_template` with the following arguments:
+After having a template, the owner can mint items from it. Call `mint_item_from_template` with the following arguments:
 
 ```json
 {
@@ -119,7 +119,7 @@ After having a template, owner can mint items from it. Call `mint_item_from_temp
 
 ### Game
 
-To create game, we need to call extrinsic `create_game` with arguments:
+To create a game, we need to call extrinsic `create_game` with arguments:
 
 ```json
 {
@@ -141,7 +141,7 @@ To allow ticket unpriviledged mint call `set_allow_unpriviledged_mint`:
 }
 ```
 
-We suppose that our game supports the "Old sword" template. Call `add_template_support` to save this association onchain.
+We suppose that our game supports the "Old sword" template. Call `add_template_support` to save this association on-chain.
 
 ### Update template
 
