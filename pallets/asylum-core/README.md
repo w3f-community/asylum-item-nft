@@ -29,9 +29,10 @@ Entities:
 * **Item:** The NFT minted from particular `Template`. `Item` has the same `Interpretation` list, specified by `Template` at the time of its minting, but can differ in future with upgrading the `Template`. The owner of `Item` might reject upgrading this `Item` according to latest updates of `Template`.
 
 Actions:
-* **Template update:** The action of updating `Interpretations` supported by the `Template`. The update divided by two steps: 
-    1. Anyone create proposal to update `Template` interpretations of metadata 
-    2. `Template` owner should submit proposal, after that `Template` will be updated
+* **Template update:** The action of updating `Interpretation` list of `Template`. The update divided in two steps: 
+    1. Anyone creates proposal to update `Template` interpretations.
+    2. DAO votes for proposal _(right now the step is skipped)_.
+    3. `Template` owner applies proposal, after that `Template` will be updated.
 * **Item update:** The action of updating the `Item`'s supported interpretations to the last version of the `Item`'s template. Triggered automatically after `Template` update, but the `Item`'s owner should accept all changes.
 * **Compatability with pallet-uniques and RMRK:** Interpretations are RMRK resources. Asylum NFTs can be used in `pallet_uniques` and RMRK contexts but with cut functionality.
 
