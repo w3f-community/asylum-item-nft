@@ -155,7 +155,7 @@ To do this, anybody could submit a template change proposal. Call `submit_templa
 
 ```json
 {
-    "author": "{SOMEONE_WHO_FOUND_THE_ISSUE_WITH_INTERPRETATION_ACCOUNT_ID}",
+    "author": "{AUTHOR_ACCOUNT_ID}",
     "template-id": 0,
     "change-set": {
         Add: {
