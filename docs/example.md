@@ -1,86 +1,70 @@
-# Asylum lifecycle example
+# Asylum node Testing Guide
+
+You have 3 options to interact with Asylum on-chain:
+1. PolkadotJS app.
+2. [Asylum UI/Connection Library](https://gitlab.com/asylum-space/asylum-ui/-/tree/main/packages/connection-library) npm package.
+3. [Asylum UI/Game Developers Console](https://gitlab.com/asylum-space/asylum-ui/-/tree/main/packages/game-developers-console) React Web App.
+
+The Testing Guide describes the option 1.
+To start working with the Testing guide, please install Asulum node and use PolkadotJS app for interaction with the node: [Click here for details](https://gitlab.com/asylum-space/asylum-item-nft/-/blob/main/README.md).
 
 ### Tags
 
-To create new tags, we need to call `create_interpretation_tag` several times - call it with the next set of arguments:
+To create new tags, you need to upload tag's metadata to IPFS and call `create_interpretation_tag`. In the example we're creating couple tags `default-view`,`jpeg`:
 
-default-view tag:
+
+1. Upload to IPFS `default-view` tag metadata and get its CID:
+
+```json
+{
+  "id": "default-view",
+  "description": "The default visualization for the item. MUST be present in all NFTs.",
+  "metadataExtensions": {}
+}
+```
+
+2. Create `default-view` tag:
 
 ```json
 {
   "tag": "default-view",
-  "metadata": "ipfs://ipfs/default-view-metadata-hash"
+  "metadata": "{METADATA_CID}"
 }
 ```
+
+3. Upload to IPFS `jpeg` tag metadata and get its CID:
 
 ```json
 {
-  "description": "The default visualization for the item. MUST be present in all NFTs.",
-  "metadataExtension": {}
+  "id": "jpeg",
+  "description": "in .jpeg format",
+  "metadataExtensions": {
+      "fileds": [
+        {
+          "name": "format",
+          "type": "string",
+          "default": ".jpeg",
+          "description": "The format of source is JPEG"
+        }
+      ]
+  }
 }
 ```
 
-2d-sprite tag:
-
-```json
-{
-  "tag": "2d-sprite",
-  "metadata": "ipfs://ipfs/2d-sprite-metadata-hash"
-}
-```
-
-```json
-{
-  "description": "2d picture representation",
-  "metadataExtension": {}
-}
-```
-
-jpeg tag:
+4. Create `jpeg` tag:
 
 ```json
 {
   "tag": "jpeg",
-  "metadata": "ipfs://ipfs/jpeg-metadata-hash"
-}
-```
-
-```json
-{
-  "description": "Anything in .jpeg format",
-  "metadataExtension": {
-      "fileFormat": {
-        "type": "string",
-        "default": ".jpeg",
-        "description": "Used to help client parse content correctly"
-    }
-  }
+  "metadata": "{METADATA_CID}"
 }
 ```
 
 ### Template
 
-Now we can create a template with interpretations that support tags created in the previous step. To do this, we need to call `create_template`. Pass the following arguments to the extrinsic:
+Now we can create a template with interpretations that support tags created in the previous step. To do this, we need to call `create_template`.
 
-```json
- {
-      "template-name": "M16: Helloween edition",
-      "metadata": "ipfs://ipfs/template-metadata-hash",
-      "max": 666,
-      "interpretations": [
-         {
-            "tags": ["default-view", "jpg"],
-            "interpretation": {
-               "id": "m16-pumpkin-jpg",
-               "src": "https://zilliongamer.com/uploads/codm/skins/assault/m16/m16-pumpkin-repeater-cod-mobile.jpg",
-               "metadata": "ipfs://ipfs/interpretation-metadata-hash",
-            },
-         },
-      ],
-   }
-```
-
-template's metadata:
+1. Upload template metadata to IPFS and get its CID:
 
 ```json
 {
@@ -90,23 +74,46 @@ template's metadata:
 }
 ```
 
-interpretation's metadata:
+2. Upload interpretation metadata to IPFS and get its CID:
 
 ```json
 {
-  "description": "You may use this interpretation in the inventory context of pixel 2D game",
-  "name": "m16-pumpkin-repeater-cod-mobile"
+  "description": "Default view interpretation in JPG format",
+  "format": ".jpg"
 }
 ```
+
+3. Upload interpretation source to IPFS and get its CID.
+
+4. Call `create_template` extrinsic with the following arguments:
+
+```json
+ {
+      "template-name": "Old sword",
+      "metadata": "{TEMPLATE_METADATA_CID}",
+      "max": 100,
+      "interpretations": [
+         {
+            "tags": ["default-view", "jpeg"],
+            "interpretation": {
+               "id": "old-sword-default-view-jpg",
+               "src": "{INTERPRETATION_SOURCE_CID}",
+               "metadata": "{INTERPRETATION_METADATA_CID}",
+            },
+         },
+      ],
+   }
+```
+
 ### Items
 
-We have the template so that the template issuer can mint items from this template. Call `mint_item_from_template`:
+After having a template, owner can mint items from it. Call `mint_item_from_template` with the following arguments:
 
 ```json
 {
-    "owner": "owner-accoundId",
+    "owner": "{OWNER_ACCOUNT_ID}",
     "template-id": 0,
-    "metadata": "ipfs://ipfs/item-metadata-hash"
+    "metadata": "{METADATA_CID}"
 }
 ```
 
@@ -118,8 +125,8 @@ To create game, we need to call extrinsic `create_game` with arguments:
 {
     "game": 0,
     "admins": {
-        "admin0-accoundId",
-        "admin1-accoundId"
+        "{ADMIN_1_ACCOUNT_ID}",
+        "{ADMIN_1_ACCOUNT_ID}"
     },
     "price": 10000
 }
@@ -134,11 +141,11 @@ To allow ticket unpriviledged mint call `set_allow_unpriviledged_mint`:
 }
 ```
 
-We suppose that our game supports the "M16: Helloween edition" template. Call `add_template_support` to save this association onchain.
+We suppose that our game supports the "Old sword" template. Call `add_template_support` to save this association onchain.
 
 ### Update template
 
-Ooops, src for our interpretation is unavailable now - resource is lost. We need to change it. To do this, we will submit a template change proposal. Call `submit_template_change_proposal":
+Ooops, src for our interpretation is unavailable now - resource is lost. We need to change it. To do this, we will submit a template change proposal. Call `submit_template_change_proposal`:
 
 ```json
 {
@@ -149,8 +156,8 @@ Ooops, src for our interpretation is unavailable now - resource is lost. We need
             [
                "interpretation": {
                "id": "m16-pumpkin-jpg",
-               "src": "ipfs://ipfs/interpretation-src-hash",
-               "metadata": "ipfs://ipfs/interpretation-metadata-hash",
+               "src": "{INTERPRETATION_SOURCE_CID}",
+               "metadata": "{METADATA_CID}",
             }
             ]
         }
