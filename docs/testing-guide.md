@@ -150,15 +150,14 @@ Ooops, src for our interpretation is unavailable now - resource is lost. We need
     "author": "{SOMEONE_WHO_FOUND_THE_ISSUE_WITH_INTERPRETATION_ACCOUNT_ID}",
     "template-id": 0,
     "change-set": {
-        Modify {
-            [
-               "interpretation": 
-               {
+        Modify: {
+          "interpretations": [
+              {
                 "id": "default-view-jpg",
                 "src": "{INTERPRETATION_SOURCE_CID}",
                 "metadata": "{METADATA_CID}",
               }
-            ]
+          ]  
         }
     }
 }
