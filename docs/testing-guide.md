@@ -94,7 +94,7 @@ Now we can create a template with interpretations that support tags created in t
          {
             "tags": ["default-view", "jpeg"],
             "interpretation": {
-               "id": "old-sword-default-view-jpg",
+               "id": "default-view-jpg",
                "src": "{INTERPRETATION_SOURCE_CID}",
                "metadata": "{INTERPRETATION_METADATA_CID}",
             },
@@ -143,28 +143,60 @@ We suppose that our game supports the "Old sword" template. Call `add_template_s
 
 ### Update template
 
-Ooops, src for our interpretation is unavailable now - resource is lost. We need to change it. To do this, we will submit a template change proposal. Call `submit_template_change_proposal`:
+When the template already exists and items are minted we still have a possibility to edit it - extend with new interpretations or fix the old ones.
+
+Let's assume that we want to add a 3d model representation for the "Old sword" template to make it supported in 3d games and also fix the link for 2d interpretation.
+
+> Note: to continue the guide here you need to create all necessary tags for the 3d model (`3d-model`, `obj`) as described in the Tags section **before** moving forward.
+
+1. **Submit proposal**
+
+To do this, anybody could submit a template change proposal. Call `submit_template_change_proposal` with two changes -  `Add` and `Modify`:
 
 ```json
 {
     "author": "{SOMEONE_WHO_FOUND_THE_ISSUE_WITH_INTERPRETATION_ACCOUNT_ID}",
     "template-id": 0,
     "change-set": {
+        Add: {
+          "interpretations": [
+            {
+               "tags": ["3d-model", "obj"],
+               "interpretation": {
+                  "id": "3d-model-obj",
+                  "src": "{3D_INTERPRETATION_SOURCE_CID}",
+                  "metadata": "{3D_INTERPRETATION_METADATA_CID}",
+               },
+            },
+          ]
+        },
         Modify: {
           "interpretations": [
               {
                 "id": "default-view-jpg",
-                "src": "{INTERPRETATION_SOURCE_CID}",
+                "src": "{NEW_INTERPRETATION_SOURCE_CID}",
                 "metadata": "{METADATA_CID}",
               }
-          ]  
+          ]
         }
     }
 }
 ```
+- In `Modify` change we're describing the changes of source or metadata of already existing interpretation.
+- With the `Add` change, we're adding a new interpretation to the template. The important thing here is to keep the new interpretation's tags set unique, as the set of tags is the identifier of the interpretation within the template.
 
-Let's assume DAO accepted that proposal, the template's owner can call `update_template`, and the issue with interpretation will be fixed.
+There are also two options for change - `ModifyTags` and `RemoveInterpretation`, that can be used in a similar way.
+
+2. **Wait for the proposal approved**
+
+Let's assume DAO accepted that proposal (currently done automatically after submitting the proposal)
+
+3. **Update template**
+
+Now the template's owner can call `update_template` extrinsic with the id of template and proposal, and all proposed updates will be applied to the template.
 
 ### Accept item update
 
-Owners of the items which were minted from the corrupted template can update items according to the last template state. To do this call `accept_item_update`. If the owner doesn't do this, then all updates will be stored in a pending state.
+After the template was updated it will request all minted Items to apply this update.
+
+Owners of the items can update their items according to the last template state. To do this owner must call `accept_item_update`. If the owner doesn't do this, then all updates will be stored in a pending state and the item will save its previous state.
