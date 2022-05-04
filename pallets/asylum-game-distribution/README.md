@@ -4,7 +4,7 @@ A simple, secure module for dealing with Asylum games and tickets
 
 ## Overview
 
-The Asylum GDS module is based on pallet-uniques. This module provides functionality for games and tickets management, including:
+The Asylum GDS module is based on `pallet_uniques`. This module provides functionality for games and tickets management, including:
 
 * Game creation
 * Game destroying
@@ -18,7 +18,11 @@ The Asylum GDS module is based on pallet-uniques. This module provides functiona
 
 ### Terminology
 
-* **Game:** The `Game` consists of: description metadata, runnable `Game Client`, set of admins (or DAO) and owner who can modify the game, on-chain state and game back-end (probably TEE) who can modify the state.
+* **Game:** The `Game` consists of: 
+  - description metadata,
+  - runnable `Game Client`,
+  - set of admins (or DAO) and owner who can modify the game,
+  - _[planed]_ on-chain state and game back-end (probably TEE), which modifies the state.
 * **Ticket:** The NFT, which is used as a pass to the `Game`.
 * **Game Client:** The binary (e.g. WASM), which is used by Player the run and play the `Game`.
 
