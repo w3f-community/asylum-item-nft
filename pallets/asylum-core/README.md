@@ -14,7 +14,7 @@ The Asylum module provides functionality for `Templates` and `Items` management,
 * `Item` transfer
 * `Item` burning
 * `Item` update
-* Compatability with [pallet_uniques](https://docs.rs/pallet-assets/latest/pallet_uniques/) and [RMRK pallets](https://rmrk-team.github.io/rmrk-substrate/#/pallets/rmrk-core)
+* Compatability with [pallet_uniques](https://paritytech.github.io/substrate/master/pallet_uniques/index.html) and [RMRK pallets](https://rmrk-team.github.io/rmrk-substrate/#/pallets/rmrk-core)
 
 ### Flow diagram
 
@@ -68,7 +68,7 @@ The Asylum core pallet is designed to make the following possible:
 
 * [`System`](https://docs.rs/frame-system/latest/frame_system/)
 * [`Support`](https://docs.rs/frame-support/latest/frame_support/)
-* [`Uniques`](https://docs.rs/pallet-assets/latest/pallet_uniques/)
+* [`Uniques`](https://paritytech.github.io/substrate/master/pallet_uniques/index.html)
 * [`RMRK`](https://rmrk-team.github.io/rmrk-substrate/#/pallets/rmrk-core)
 
 License: MIT
