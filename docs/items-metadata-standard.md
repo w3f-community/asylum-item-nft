@@ -1,13 +1,21 @@
-TODO:
-- add Flow diagram right part
-- add descriptions
-- add info about template and item update
+//TODO
+
+add info about template and item update
 
 # Items metadata standard
 
 Every Item in the Asylum ecosystem can have custom metadata, but will also inherit metadata from its Template (including Interpretations).
 
-# Template metadata standard
+## Asylum entities flow diagram
+
+![](/docs/img/asylum-entities-flow-diagram.png)
+
+* **Template:** The extension of the classic NFT Collection. The `Temlate` has a set of supported `Interpretations`, and all items minted from this `Template` support these `Interpretations` as well.
+* **Interpretation:** The description of the media resource, which is used to interpret the `Template` in different contexts. To describe such context, `Interpretation` must be associated with the unique set of `Tags`. This set of `Tags` defines the format of `Interpretation`'s metadata.
+* **Tag:** The `Tag` is used to give an `Interpretation` a special semantic allowing `Game Client` to query specific `Interpretation` according to the context of usage. `Tag` can describe a list of fields, which forms `Interpretaion`'s metadata.
+* **Item:** The NFT minted from a particular `Template`. `Item` has the same `Interpretation` list, specified by `Template` at the time of its minting, but can differ in the future with upgrading the `Template`. The owner of `Item` might reject upgrading this `Item` according to the latest updates of `Template`.
+
+## Template metadata standard
 
 Template metadata currently contains only the `description` field and has the following structure:
 ```json
@@ -19,7 +27,7 @@ Example of this metadata can be found in the [Asylum Node testing guide](https:/
 
 Template metadata does not have any additional fields as all other data is stored in the Interpretations and its metadata.
 
-# Tag metadata standard
+## Tag metadata standard
 
 Every Tag stored in the Asylum ecosystem will have attached metadata.
 
@@ -48,7 +56,7 @@ The whole structure of tag metadata:
 ```
 Example of this metadata can be found in the [Asylum Node testing guide](https://gitlab.com/asylum-space/asylum-item-nft/-/blob/main/docs/testing-guide.md) in the Tags section.
 
-# Interpretation metadata standard
+## Interpretation metadata standard
 
 Interpretation metadata contains only the `description` field, but can be extended but using extensions from the tags (see next section).
 
@@ -60,7 +68,7 @@ The structure of interpretation metadata:
 }
 ```
 
-# Examples of metadata extensions usage
+## Examples of metadata extensions usage
 
 Let's consider a few examples of `metadataExtensions` usage.
 
