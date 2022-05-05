@@ -25,7 +25,7 @@ Template metadata does not have any additional fields as all the info is stored 
 
 ## Tag metadata standard
 
-Every Interpretation in the Asylum ecosystem is associated with a specific set of Tags. **Consider Tags as a verbal description of Interpretation**. Tags can carry interpretation metadata fields with predefined or configurable values, or even without any metadata, bringing specific semantics to the Interpretation (like the `pixeled` tag). 
+Every Interpretation in the Asylum ecosystem is associated with a specific set of Tags. **Consider Tags as a verbal description of Interpretation**. Tags can carry interpretation metadata fields with predefined or configurable values, or even without any metadata, bringing specific semantics to the Interpretation (like the `pixeled` tag).
 
 Besides the common Tag fields like `id` and `description` that are used to provide the understanding of the Tag semantics, Tag metadata also has a complex field - `metadataExtensions`.
 
@@ -43,7 +43,7 @@ The whole structure of tag metadata:
         {
           "name": "string",
           "type": "string",
-          "default": "string",
+          "default": "any",
           "description": "string"
         }
       ]
