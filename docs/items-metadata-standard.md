@@ -1,7 +1,6 @@
 # Items metadata standard
 
-Every Item in the Asylum ecosystem can have custom metadata and inherit metadata from its Template (including Interpretations).
-Below there is a detailed diagram showing NFT-item related entities and their relations.
+All NFT items in Asylum ecosystem extends `pallet_uniques` and `RMRK` standards and inherits tranferability and extensibility. But we want also to bring gaming semantics and interoperability to items, that's why we introduced such abstractions as Template and Interpretation.
 
 ## Asylum entities flow diagram
 
