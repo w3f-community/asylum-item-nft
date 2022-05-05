@@ -1,10 +1,7 @@
-//TODO
-
-add info about template and item update
-
 # Items metadata standard
 
-Every Item in the Asylum ecosystem can have custom metadata, but will also inherit metadata from its Template (including Interpretations).
+Every Item in the Asylum ecosystem can have custom metadata and inherit metadata from its Template (including Interpretations).
+Below there is a detailed diagram showing NFT-item related entities and their relations.
 
 ## Asylum entities flow diagram
 
