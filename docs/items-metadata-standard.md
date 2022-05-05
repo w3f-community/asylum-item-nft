@@ -20,17 +20,19 @@ Template metadata currently contains only the `description` field and has the fo
   "description": "string",
 }
 ```
-Example of this metadata can be found in the [Asylum Node testing guide](https://gitlab.com/asylum-space/asylum-item-nft/-/blob/main/docs/testing-guide.md) in the Template section.
+You can find an example of configuring the metadata in the [Asylum Node testing guide](https://gitlab.com/asylum-space/asylum-item-nft/-/blob/main/docs/testing-guide.md) in the Template section.
 
-Template metadata does not have any additional fields as all other data is stored in the Interpretations and its metadata.
+Template metadata does not have any additional fields as all the info is stored in the Interpretations and its metadata.
 
 ## Tag metadata standard
 
-Every Tag stored in the Asylum ecosystem will have attached metadata.
+Every Interpretation in Asylum ecosystem is associated with specific set of Tags. Every Tag will have attached metadata.
 
-Besides the common fields like `id` and `description` that are used to provide the understanding of the Tag's semantics, Tag metadata also has a complex field - `metadataExtensions`.
+**Consider Tags as a verbal description of Interpretation**. Tags can carry metadata fields with predefined or configurable values, or even without any metadata, bringing specific semantics to the Interpretation (like the `pixeled` tag). 
 
-**`metadataExtensions` is the object, that describes the way how the concrete Tag will affect the metadata of Interpretation.** That means that every tag applied to the interpretations can bring additional metadata to these interpretations.
+Besides the common Tag fields like `id` and `description` that are used to provide the understanding of the Tag semantics, Tag metadata also has a complex field - `metadataExtensions`.
+
+**`metadataExtensions` is the object, that describes the way how the concrete Tag affects the metadata of Interpretation.
 
 For example `png` tag can bring the required `fileFormat` field to the metadata with the default value `png`.
 
