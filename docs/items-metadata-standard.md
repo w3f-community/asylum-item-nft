@@ -7,9 +7,9 @@ Below there is a detailed diagram showing NFT-item related entities and their re
 
 ![](/docs/img/asylum-entities-flow-diagram.png)
 
-* **Template:** The extension of the classic NFT Collection. The `Temlate` has a set of supported `Interpretations`, and all items minted from this `Template` support these `Interpretations` as well.
+* **Template:** The extension of the classic NFT Collection. The `Template` has a set of supported `Interpretations`, and all items minted from this `Template` support these `Interpretations` as well.
 * **Interpretation:** The description of the media resource, which is used to interpret the `Template` in different contexts. To describe such context, `Interpretation` must be associated with the unique set of `Tags`. This set of `Tags` defines the format of `Interpretation`'s metadata.
-* **Tag:** The `Tag` is used to give an `Interpretation` a special semantic allowing `Game Client` to query specific `Interpretation` according to the context of usage. `Tag` can describe a list of fields, which forms `Interpretaion`'s metadata.
+* **Tag:** The `Tag` is used to give an `Interpretation` a special semantic, allowing `Game Client` to query specific `Interpretation` according to the context of usage. `Tag` can describe a list of fields, which forms `Interpretaion`'s metadata.
 * **Item:** The NFT minted from a particular `Template`. `Item` has the same `Interpretation` list, specified by `Template` at the time of its minting, but can differ in the future with upgrading the `Template`. The owner of `Item` might reject upgrading this `Item` according to the latest updates of `Template`.
 
 ## Template metadata standard
@@ -26,11 +26,11 @@ Template metadata does not have any additional fields as all the info is stored 
 
 ## Tag metadata standard
 
-Every Interpretation in Asylum ecosystem is associated with specific set of Tags. **Consider Tags as a verbal description of Interpretation**. Tags can carry interpretation metadata fields with predefined or configurable values, or even without any metadata, bringing specific semantics to the Interpretation (like the `pixeled` tag). 
+Every Interpretation in the Asylum ecosystem is associated with a specific set of Tags. **Consider Tags as a verbal description of Interpretation**. Tags can carry interpretation metadata fields with predefined or configurable values, or even without any metadata, bringing specific semantics to the Interpretation (like the `pixeled` tag). 
 
 Besides the common Tag fields like `id` and `description` that are used to provide the understanding of the Tag semantics, Tag metadata also has a complex field - `metadataExtensions`.
 
-**`metadataExtensions` is the object, that describes the way how the concrete Tag affects the metadata of Interpretation.**
+**`metadataExtensions` is the object that describes the way how the concrete Tag affects the metadata of Interpretation.**
 
 For example `png` tag can bring the required `format` field to the metadata with the default value `png`.
 
@@ -55,7 +55,7 @@ You can find an example of configuring the metadata in the [Asylum Node testing 
 
 ## Interpretation metadata standard
 
-Interpretation metadata contains only the `description` field, but can be extended by Tags (see examples in the next section).
+Interpretation metadata contains only the `description` field but can be extended by Tags (see examples in the next section).
 
 The structure of interpretation metadata:
 ```json
@@ -69,7 +69,7 @@ The structure of interpretation metadata:
 
 Let's consider a few examples of `metadataExtensions` usage.
 
-1. Fist one is the `pixeled` tag, that is used to define pictures in pixeled style and can bring fields like `pixel-size` or `smoothed`.
+1. Fist one is the `pixeled` tag, which is used to define pictures in pixeled style and can bring fields like `pixel-size` or `smoothed`.
 
 Metadata of the `pixeled` tag:
 ```json
