@@ -32,7 +32,7 @@ Besides the common Tag fields like `id` and `description` that are used to provi
 
 **`metadataExtensions` is the object, that describes the way how the concrete Tag affects the metadata of Interpretation.**
 
-For example `png` tag can bring the required `fileFormat` field to the metadata with the default value `png`.
+For example `png` tag can bring the required `format` field to the metadata with the default value `png`.
 
 The whole structure of tag metadata:
 ```json
@@ -69,12 +69,12 @@ The structure of interpretation metadata:
 
 Let's consider a few examples of `metadataExtensions` usage.
 
-1. Fist one - is the `pixel-styled` tag, that used to define pictures in pixeled style and can bring fields like `pixel-size` or `smoothed`.
+1. Fist one - is the `pixeled` tag, that used to define pictures in pixeled style and can bring fields like `pixel-size` or `smoothed`.
 
-Metadata of the `pixel-styled` tag:
+Metadata of the `pixeled` tag:
 ```json
 {
-  "id": "pixel-styled",
+  "id": "pixeled",
   "description": "picture in pixeled style",
   "metadataExtensions": {
       "fileds": [
@@ -95,7 +95,7 @@ Metadata of the `pixel-styled` tag:
 }
 ```
 
-Metadata of interpretations with `pixel-styled` tag:
+Metadata of interpretations with `pixeled` tag:
 ```json
 {
   "description": "....",
