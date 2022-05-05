@@ -51,31 +51,31 @@ The whole structure of tag metadata:
   }
 }
 ```
-Example of this metadata can be found in the [Asylum Node testing guide](https://gitlab.com/asylum-space/asylum-item-nft/-/blob/main/docs/testing-guide.md) in the Tags section.
+You can find an example of configuring the metadata in the [Asylum Node testing guide](https://gitlab.com/asylum-space/asylum-item-nft/-/blob/main/docs/testing-guide.md) in the Tags section.
 
 ## Interpretation metadata standard
 
-Interpretation metadata contains only the `description` field, but can be extended but using extensions from the tags (see next section).
+Interpretation metadata contains only the `description` field, but can be extended by Tags (see examples in the next section).
 
 The structure of interpretation metadata:
 ```json
 {
   "description": "string",
-  "added-field": "some-value"
+  "tag-metadata-field-name": "tag-metadata-field-name"
 }
 ```
 
-## Examples of metadata extensions usage
+## Examples of `metadataExtensions` usage
 
 Let's consider a few examples of `metadataExtensions` usage.
 
-1. Fist one - is the `pixeled` tag, that used to define pictures in pixeled style and can bring fields like `pixel-size` or `smoothed`.
+1. Fist one is the `pixeled` tag, that is used to define pictures in pixeled style and can bring fields like `pixel-size` or `smoothed`.
 
 Metadata of the `pixeled` tag:
 ```json
 {
   "id": "pixeled",
-  "description": "picture in pixeled style",
+  "description": "in pixeled style",
   "metadataExtensions": {
       "fileds": [
         {
@@ -98,13 +98,13 @@ Metadata of the `pixeled` tag:
 Metadata of interpretations with `pixeled` tag:
 ```json
 {
-  "description": "....",
-  "pixel-size": "128",
+  "description": "interpretation description",
+  "pixel-size": 128,
   "smoothed": false,
 }
 ```
 
-2. Another example - is the `animation-sprite-atlas` tag, which is used to define an atlas for 2d animation and will bring required fields like `tile-size-h`, `tile-size-w`, `tiles-count`, and `padding`.
+2. Another example is the `animation-sprite-atlas` tag, which is used to define an atlas for 2d animation and will bring required fields like `tile-size-h`, `tile-size-w`, `tiles-count`, and `padding`.
 
 Metadata of the `animation-sprite-atlas` tag:
 ```json
@@ -145,10 +145,10 @@ Metadata of the `animation-sprite-atlas` tag:
 Metadata of interpretations with `animation-sprite-atlas` tag:
 ```json
 {
-  "description": "....",
-  "tile-size-h": "64",
-  "tile-size-w": "64",
-  "tiles-count": "21",
-  "padding": "2",
+  "description": "interpretation description",
+  "tile-size-h": 64,
+  "tile-size-w": 64,
+  "tiles-count": 21,
+  "padding": 2,
 }
 ```
