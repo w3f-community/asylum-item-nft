@@ -1,0 +1,7 @@
+doc
+**target*
+.vscode/
+Dockerfile
+.dockerignore
+.local
+.env*
