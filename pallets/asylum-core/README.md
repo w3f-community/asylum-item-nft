@@ -1,70 +1,64 @@
-# Asylum Core Module
+# Asylum Core Pallet
 
-A simple, secure module for dealing with asylum templates and items
+A simple, secure module for dealing with Asylum `Templates` and `Items`.
 
 ## Overview
 
-The Asylum module provides functionality for templates and items management, including:
+The Asylum module provides functionality for `Templates` and `Items` management, including:
 
-* Interpretation type creation
-* Template creation
-* Template destroying
-* Template update
-* Item issuance
-* Item transfer
-* Item burning
-* Item update
-* Compatability with pallet-uniques and RMRK
+* Interpretation `Tag` creation
+* `Template` creation
+* `Template` destroying
+* `Template` update
+* `Item` minting
+* `Item` transfer
+* `Item` burning
+* `Item` update
+* Compatability with [pallet_uniques](https://paritytech.github.io/substrate/master/pallet_uniques/index.html) and [RMRK pallets](https://rmrk-team.github.io/rmrk-substrate/#/pallets/rmrk-core)
+
+### Flow diagram
+
+![](/docs/img/asylum-flow-diagram.png)
 
 ### Terminology
 
-* **Interpretation:** The abstraction of how we can interpret the item in different contexts, such as pixel art or anime style.
-* **Interpretation type:** The common interpretation context for several interpretations includes 2D, 3D, sound, etc.
-* **Template:** The extension of the classic NFT's Collection. The template has a set of supported interpretations, and all items minted from this template should support these interpretations too.
-* **item:** The extension of the classic NFT. Item has a set of supported interpretations.
-* **Interpretation type creation:** The creation of a new interpretation type.
-* **Template creation:** The creation of a new template.
-* **Template destruction:** The destruction of a template.
-* **Template update:** The action of updating template's supported interpretations: add/modify/remove types/interpretations
-* **Item issuance:** Creating a new item from the template.
-* **Item transfer:** The action of transferring an item from one account to another.
-* **Item burning:** The destruction of an item.
-* **Item update:** The action of updating the item's supported interpretations to the last version of the item's template. Triggered automatically after template update, but the item's owner should accept all changes.
-* **Compatability with pallet-uniques and RMRK:** The interpretations are RMRK resources. Asylum NFTs can be used in pallet-uniques and RMRK contexts but with cut functionality.
+Entities:
+* **Template:** The extension of the classic NFT Collection. The `Temlate` has a set of supported `Interpretations`, and all items minted from this `Template` support these `Interpretations` as well.
+* **Interpretation:** The description of the media resource, which is used to interpret the `Template` in different contexts. To describe such context, `Interpretation` must be associated with the unique set of `Tags`. This set of `Tags` defines the format of `Interpretation`'s metadata.
+* **Tag:** The `Tag` is used to give an `Interpretation` a special semantic allowing `Game Client` to query specific `Interpretation` according to the context of usage. `Tag` can describe a list of fields, which forms `Interpretaion`'s metadata.
+* **Item:** The NFT minted from a particular `Template`. `Item` has the same `Interpretation` list, specified by `Template` at the time of its minting, but can differ in the future with upgrading the `Template`. The owner of `Item` might reject upgrading this `Item` according to the latest updates of `Template`.
 
-### Goals
-
-The Asylum core pallet is designed to make the following possible:
-
-* Allow accounts to create, destroy and update templates (collections of items).
-* Allow the account to mint, burn, and update items within a template.
-* Allow submitting template change proposals.
-* Move items between accounts.
+Actions:
+* **Template update:** The action of updating `Interpretation` list of `Template`. The update is divided in two steps: 
+    1. Anyone creates a proposal to update `Template` interpretations.
+    2. DAO votes for proposal _(right now, the step is skipped)_.
+    3. `Template` owner applies proposal, after that, `Template` will be updated.
+* **Item update:** The action of updating the `Item`'s supported interpretations to the last version of the `Item`'s template. Triggered automatically after `Template` update, but the `Item`'s owner should accept all changes.
 
 ## Interface
 
 ### Interpretation dispatchables
-* `create_interpretation_type`: Create new interpretation type.
+* `create_interpretation_tag`: Create new interpretation tag.
 
 ### Template dispatchables
 * `create_template`: Create new template.
 * `destroy_template`: Destroy template.
-* `update_template`: Update template according to proposal and request all items update after this.
+* `update_template`: Update template according to the proposal and request minted Items to apply this update.
 
 ### Item dispatchables
-* `mint_item_from_template`: Mint new item from the template, i.e., mint item with the same set of supported interpretations as the template has.
-* `transfer_item`: Move an item from the sender account to another.
+* `mint_item_from_template`: Mint new item from the template, i.e. mint item with the same set of supported interpretations by the template.
+* `transfer_item`: Move an item from the sender account to the receiver.
 * `burn_item`: Destroy an item.
-* `accept_item_update`: Accept all template's updates till the newest version of the template.
+* `accept_item_update`: Accept all template updates up to the newest version of the template.
 
 ### DAO dispatchables
-* `submit_template_change_proposal`: Submit proposal with template changes.
+* `submit_template_change_proposal`: Submit proposal with template updates.
 
 ## Related Modules
 
 * [`System`](https://docs.rs/frame-system/latest/frame_system/)
 * [`Support`](https://docs.rs/frame-support/latest/frame_support/)
-* [`Uniques`](https://docs.rs/pallet-assets/latest/pallet_uniques/)
+* [`Uniques`](https://paritytech.github.io/substrate/master/pallet_uniques/index.html)
 * [`RMRK`](https://rmrk-team.github.io/rmrk-substrate/#/pallets/rmrk-core)
 
-License: Apache-2.0
+License: MIT

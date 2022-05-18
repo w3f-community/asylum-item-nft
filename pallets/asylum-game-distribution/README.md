@@ -1,10 +1,10 @@
-# Asylum Game Distribution System Module
+# Asylum Game Distribution System Pallet
 
-A simple, secure module for dealing with asylum games and tickets
+A simple, secure module for dealing with Asylum games and tickets
 
 ## Overview
 
-The Asylum GDS module is based on pallet-uniques. This module provides functionality for games and tickets management, including:
+The Asylum GDS module is based on `pallet_uniques`. This module provides functionality for games and tickets management, including:
 
 * Game creation
 * Game destroying
@@ -12,22 +12,20 @@ The Asylum GDS module is based on pallet-uniques. This module provides functiona
 * Ticket transfer
 * Ticket burning
 
+### Flow diagram
+
+![](/docs/img/asylum-flow-diagram.png)
+
 ### Terminology
 
-* **Game:** The collection of tickets.
-* **Ticket:** The NFT, which is used as proof of ownership of the game.
+* **Game:** The `Game` consists of: 
+  - description metadata,
+  - runnable `Game Client`,
+  - set of admins (or DAO) and owner who can modify the game,
+  - _[planed]_ on-chain state and game back-end (probably TEE), which modifies the state.
+* **Ticket:** The NFT, which is used as a pass to the `Game`.
+* **Game Client:** The binary (e. g. WASM), which the Player uses to run and play the `Game`. Right now, it will be a link to the server where the game is spun up.
 
-### Goals
-
-The Asylum GDS pallet is designed to make the following possible:
-
-* Allow accounts to create and destroy games (collections of tickets).
-* Allow the account to mint, burn, and transfer tickets.
-* Move tickets between accounts.
-* Allow an account to freeze and unfreeze tickets within a
-  game or the entire game.
-* Allow the owner of a ticket instance to delegate the ability to transfer the ticket to some
-  named third party.
 
 ## Interface
 
@@ -40,12 +38,12 @@ The Asylum GDS pallet is designed to make the following possible:
 * `set_team`: Alter the permissioned accounts of a game.
 
 ### Ticket dispatchables
-* `mint_ticket`: Mint a new ticket within an asset class. Any account can mint a ticket if it can transfer the game `price` to the game owner account.
+* `mint_ticket`: Mint a new ticket within an asset class.
 * `transfer_ticket`: Transfer a ticket to a new owner.
 * `burn_ticket`: Burn a ticket within a game.
 * `freeze_ticket`: Prevent a ticket from being transferred.
 * `thaw_ticket`: Revert the effects of a previous `freeze_ticket`.
-* `approve_transfer`: Name a delegate who may authorize a transfer.
+* `approve_transfer`: Assign a delegator who can authorize a transfer.
 * `cancel_approval`: Revert the effects of a previous `approve_transfer`.
 
 ### Metadata (permissioned) dispatchables
@@ -60,6 +58,6 @@ The Asylum GDS pallet is designed to make the following possible:
 
 * [`System`](https://docs.rs/frame-system/latest/frame_system/)
 * [`Support`](https://docs.rs/frame-support/latest/frame_support/)
-* [`Uniques`](https://docs.rs/pallet-assets/latest/pallet_uniques/)
+* [`Uniques`](https://paritytech.github.io/substrate/master/pallet_uniques/index.html)
 
-License: Apache-2.0
+License: MIT
